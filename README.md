@@ -9,7 +9,7 @@ Reconstruido desde WordPress a **TypeScript** con **Next.js**, listo para desple
 ## Estructura del proyecto
 
 ```
-thebotspot/
+botspot/
 ├── frontend/              → Sitio web (Next.js + React + TypeScript). Es lo que Vercel despliega.
 │   ├── public/images/     → Imágenes del sitio
 │   └── src/
@@ -97,7 +97,7 @@ npx firebase-tools deploy --only firestore:rules
 
 ## Desplegar en Vercel
 
-1. En <https://vercel.com/new> importa el repositorio `Shantalsmr/thebotspot`.
+1. En <https://vercel.com/new> importa el repositorio `Shantalsmr/botspot`.
 2. En **Root Directory** elige **`frontend`** (Vercel detecta Next.js solo).
 3. En **Environment Variables** agrega `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL` y `FIREBASE_PRIVATE_KEY`.
 4. **Deploy**. Cada `git push` a `main` vuelve a desplegar automáticamente.

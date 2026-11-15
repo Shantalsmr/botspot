@@ -7,7 +7,7 @@ Guía para Claude Code al trabajar en este repositorio.
 Sitio web de **The Bot Spot** (arcade de batallas de robots en Provo, Utah). Migrado de WordPress a
 **Next.js 16 + React 19 + TypeScript**, desplegado en **Vercel**, con **Firebase/Firestore** como base de datos.
 
-- Repositorio: `https://github.com/Shantalsmr/thebotspot` (rama principal: `main`)
+- Repositorio: `https://github.com/Shantalsmr/botspot` (rama principal: `main`)
 - Cada push a `main` despliega en Vercel (Root Directory: `frontend`).
 - Idioma: la documentación, comentarios y commits van en **español**; el contenido visible del sitio va en **inglés**.
 
