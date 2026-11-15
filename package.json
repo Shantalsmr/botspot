@@ -1,0 +1,20 @@
+{
+  "name": "thebotspot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Bot Spot - robot battle arcade. Monorepo: frontend (Next.js), backend (API logic) and database (Firebase/Firestore).",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "database"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w frontend",
+    "build": "npm run build -w frontend",
+    "start": "npm run start -w frontend",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}

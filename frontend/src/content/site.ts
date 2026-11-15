@@ -1,0 +1,135 @@
+/**
+ * Informacion del negocio en un solo archivo.
+ * Cambia telefonos, horarios, redes, etc. aqui y se actualiza todo el sitio.
+ */
+export const site = {
+  name: "The Bot Spot",
+  tagline: "It's Battle Time",
+  description:
+    "Downtown Provo's family robot arcade. Battle weaponized robots, play classic arcade games and celebrate your birthday with robot-powered fun.",
+  url: "https://thebotspot.org",
+  email: "info@thebotspot.org",
+  phones: ["(385) 567-6502", "(385) 283-2039"],
+  pricePerPerson: 25,
+  city: "Downtown Provo, Utah",
+  social: {
+    facebook: "https://www.facebook.com/p/The-Bot-Spot-61582077369646/",
+    instagram: "https://www.instagram.com/botspot_ut/",
+  },
+  // Horarios tomados de la pagina de Contacto (ver ROADMAP.md: confirmar).
+  hours: [
+    { days: "Mon – Thu", time: "5:00 PM – 9:30 PM" },
+    { days: "Fri", time: "5:00 PM – 10:30 PM" },
+    { days: "Sat", time: "12:00 PM – 10:30 PM" },
+    { days: "Sun", time: "Closed" },
+  ],
+} as const;
+
+export const navLinks = [
+  { href: "/", label: "Home" },
+  { href: "/parties", label: "Parties" },
+  { href: "/shop", label: "Shop" },
+  { href: "/gallery", label: "Gallery" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/location", label: "Location" },
+  { href: "/contact", label: "Contact" },
+] as const;
+
+export interface Activity {
+  title: string;
+  description: string;
+  icon: string;
+}
+
+export const activities: Activity[] = [
+  {
+    icon: "🤖",
+    title: "Robot Battle Arenas",
+    description:
+      "Take control of a weaponized robot and face off against friends in one of our two custom-built arenas. Up to 8 players per arena for epic showdowns!",
+  },
+  {
+    icon: "🕹️",
+    title: "Classic Arcade Games",
+    description:
+      "Enjoy timeless favorites like air hockey, foosball, and more, perfect for quick matches and friendly competition.",
+  },
+  {
+    icon: "🍿",
+    title: "Snacks & Refreshments",
+    description: "Refuel between games with chips, soft drinks, and snacks that keep the energy going.",
+  },
+  {
+    icon: "🎉",
+    title: "Birthday Parties & Events",
+    description:
+      "Celebrate in style! Our arcade is the perfect spot for birthdays, group outings, and team events with fun packages to fit your needs.",
+  },
+  {
+    icon: "👨‍👩‍👧",
+    title: "Family & Friends Nights",
+    description:
+      "Make it a night to remember with activities designed for couples, families, and friends to bond, laugh, and compete together.",
+  },
+  {
+    icon: "🏆",
+    title: "Tournaments & Challenges",
+    description: "Test your skills in our regular robot battles and arcade challenges — bragging rights await!",
+  },
+];
+
+export interface Faq {
+  question: string;
+  answer: string;
+}
+
+export const faqs: Faq[] = [
+  {
+    question: "Do you host birthday parties?",
+    answer:
+      "Yes! We offer birthday party packages that include arcade games, robot battles, and space for cake, pizza and presents. Contact us to book your spot.",
+  },
+  {
+    question: "How many people can play in the robot battle arenas?",
+    answer: "Each arena can host up to 8 players at a time, making it perfect for dates, groups, and parties.",
+  },
+  {
+    question: "Do I need to reserve in advance for robot battles?",
+    answer:
+      "Walk-ins are welcome, but we recommend reservations for parties and weekends to guarantee your spot.",
+  },
+  {
+    question: "Can I bring my own food or cake?",
+    answer:
+      "Outside food is not allowed, but birthday cakes are welcome with party reservations. We also offer snacks, ice cream, chips, and drinks on-site.",
+  },
+  {
+    question: "What are your hours of operation?",
+    answer: site.hours.map((h) => `${h.days}: ${h.time}`).join(" · "),
+  },
+  {
+    question: "Do you have group rates?",
+    answer: "Yes! We offer discounted packages for groups, schools, and corporate events. Reach out for custom pricing.",
+  },
+  {
+    question: "Is the arcade family-friendly?",
+    answer: "Absolutely. We're designed for all ages — kids, teens, and adults will all find games they love.",
+  },
+  {
+    question: "Is there an age limit for playing the robot battles?",
+    answer:
+      "Players should be at least 6 years old to enjoy the robot battles. Younger children can still enjoy our classic arcade games.",
+  },
+  {
+    question: "Do you have parking available?",
+    answer: "Yes, we offer convenient on-site parking for all our guests, free of charge.",
+  },
+  {
+    question: "Do game tickets expire?",
+    answer: "Use them today, tomorrow, or next year — fun doesn't have an expiration date at The Bot Spot!",
+  },
+];
+
+export function telHref(phone: string): string {
+  return `tel:+1${phone.replace(/\D/g, "")}`;
+}

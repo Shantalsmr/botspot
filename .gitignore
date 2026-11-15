@@ -1,1 +1,26 @@
+# Dependencias
+node_modules/
+
+# Next.js / Vercel
+.next/
+out/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+
+# Variables de entorno (NUNCA subir llaves reales)
+.env
+.env*.local
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+service-account*.json
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Script local para subir a GitHub
 subir_a_github.bat

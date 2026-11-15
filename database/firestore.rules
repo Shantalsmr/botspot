@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// Todo el acceso a Firestore pasa por el backend (Firebase Admin SDK en Vercel),
+// que ignora estas reglas. Por eso bloqueamos cualquier acceso directo
+// desde navegadores o apps. Si algun dia el frontend lee Firestore directo,
+// se abren aqui solo las colecciones necesarias.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
