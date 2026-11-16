@@ -33,11 +33,13 @@ precios en `backend/src/catalog.ts`, horario L–J 5–9:30 PM, V 5–10:30 PM, 
 
 - [ ] Variables en Vercel (Stripe + Firebase) y webhook en Stripe → `/api/stripe/webhook`
 - [ ] Aprobar con el negocio: política de cancelación y precio de grupos intermedios (p. ej. 6 personas = $140)
-- [ ] Limitar reservas pendientes por visitante (evitar que alguien aparte cupos sin pagar)
+- [x] Máximo 2 reservas sin pagar a la vez por visitante (hash anónimo de la IP)
 - [ ] Aviso al negocio por correo (info@thebotspot.org) en cada reserva
-- [ ] `/my-bookings` y panel para ver las reservas del día
+- [x] Panel `/admin` con contraseña (`ADMIN_PASSWORD`): ingresos hoy/7 días/mes, gráfico de 30 días, próximas reservas y formularios
+- [ ] `/my-bookings` (el cliente consulta su reserva)
 - [ ] Pasar a claves live de Stripe (cuenta activada con EIN y banco de The Bot Spot)
-- [ ] Formularios: eventos corporativos (correo, teléfono, dirección, tipo) y lista de espera STEAM
+- [x] Formularios `/events` (eventos corporativos / arenas móviles) y `/steam` (lista de espera), colección `inquiries`
+- [ ] `ADMIN_PASSWORD` en Vercel
 
 
 ---

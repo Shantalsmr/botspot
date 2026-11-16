@@ -268,7 +268,7 @@ p {
   text-decoration: none;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1100px) {
   .menu-toggle {
     display: inline-flex;
     align-items: center;
@@ -856,4 +856,242 @@ h2.display {
     padding-top: 32px;
     background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.3) 60%, transparent 85%);
   }
+}
+
+/* ---------- Formularios (eventos / STEAM) ---------- */
+.inquiry-form {
+  display: grid;
+  gap: 18px;
+}
+
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  color-scheme: dark;
+}
+
+.hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.form-success {
+  border-color: var(--color-accent);
+}
+
+.timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+}
+
+/* ---------- Panel /admin ---------- */
+.admin-login-wrap {
+  max-width: 420px;
+}
+
+.admin-login {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.admin-top h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+
+.admin-h2 {
+  font-size: 1.35rem;
+  margin: 36px 0 14px;
+}
+
+.stat-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+}
+
+.stat {
+  display: grid;
+  gap: 4px;
+  padding: 20px 22px;
+}
+
+.stat-label {
+  color: var(--color-muted);
+  font-size: 0.95rem;
+}
+
+.stat-value {
+  font-size: 2.2rem;
+  line-height: 1.1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.revenue {
+  margin-top: 24px;
+}
+
+.revenue-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.revenue-head .admin-h2 {
+  margin: 0 0 12px;
+}
+
+/* Barras: una sola serie (sin leyenda), 2px de separacion, punta redondeada de 4px */
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 200px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.bar-col {
+  position: relative;
+  flex: 1 1 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  outline: none;
+}
+
+.bar {
+  width: 100%;
+  background: #e86a00;
+  border-radius: 4px 4px 0 0;
+}
+
+.bar-col:hover .bar,
+.bar-col:focus-visible .bar {
+  background: #ff8a26;
+}
+
+.bar-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  flex-direction: column;
+  white-space: nowrap;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+  font-size: 0.85rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.bar-col:hover .bar-tip,
+.bar-col:focus-visible .bar-tip {
+  display: flex;
+}
+
+.bar-col:first-child .bar-tip {
+  left: 0;
+  transform: none;
+}
+
+.bar-col:last-child .bar-tip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.bars-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.revenue-table {
+  margin-top: 14px;
+}
+
+.revenue-table summary {
+  cursor: pointer;
+  color: var(--color-accent);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.admin-table th {
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.admin-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-day h3 {
+  margin: 22px 0 8px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+}
+
+.badge-steam {
+  border-color: #fff;
+  color: #fff;
+}
+
+.inquiry-message {
+  white-space: pre-wrap;
 }

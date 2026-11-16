@@ -51,6 +51,8 @@ Flujo obligatorio: **`frontend` (página o `app/api/*/route.ts`) → `backend` (
 - **Stripe**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`. Cliente en
   `backend/src/lib/stripe.ts`. Precios, horario y capacidad de reservas en `backend/src/catalog.ts` (módulo puro,
   importable desde el cliente como `@botspot/backend/catalog`); el precio siempre se calcula en el servidor.
+- **Panel `/admin`**: una contraseña (`ADMIN_PASSWORD`) y cookie firmada (`backend/src/services/admin.service.ts`);
+  bloqueo tras 10 intentos fallidos. Formularios de eventos/STEAM en `inquiry.service.ts` (colección `inquiries`).
 - **Variables de entorno** (`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`) se leen en
   `database/src/env.ts`; si faltan, el sitio sigue funcionando sin base de datos. Local: `frontend/.env.local`.
 - **Datos del negocio** (teléfonos, horarios, precio, FAQ, actividades, nav) viven en `frontend/src/content/site.ts`;

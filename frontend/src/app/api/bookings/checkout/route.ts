@@ -1,4 +1,4 @@
-import { createBookingCheckout, fail, ok, type CreateCheckoutInput } from "@botspot/backend";
+import { clientIdFromHeaders, createBookingCheckout, fail, ok, type CreateCheckoutInput } from "@botspot/backend";
 import { bookingErrorResponse } from "../handle-error";
 
 export const runtime = "nodejs";
@@ -13,7 +13,8 @@ export async function POST(request: Request): Promise<Response> {
     return fail("invalid_body", "Invalid request.");
   }
   try {
-    return ok(await createBookingCheckout(body, new URL(request.url).origin));
+    const clientId = clientIdFromHeaders(request.headers.get("x-forwarded-for"));
+    return ok(await createBookingCheckout(body, new URL(request.url).origin, clientId));
   } catch (error) {
     return bookingErrorResponse(error);
   }

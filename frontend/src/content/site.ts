@@ -30,7 +30,8 @@ export const site = {
 export const navLinks = [
   { href: "/", label: "Home" },
   { href: "/parties", label: "Parties" },
-  { href: "/shop", label: "Shop" },
+  { href: "/events", label: "Events" },
+  { href: "/steam", label: "STEAM" },
   { href: "/gallery", label: "Gallery" },
   { href: "/faq", label: "FAQ" },
   { href: "/location", label: "Location" },

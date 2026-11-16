@@ -23,6 +23,8 @@ import { getStripe, isStripeConfigured } from "../lib/stripe";
 
 /** Tiempo que un cupo queda apartado mientras el cliente paga (Stripe exige minimo 30 min). */
 const HOLD_MIN = 30;
+/** Maximo de reservas sin pagar (apartadas) a la vez por visitante. */
+const MAX_ACTIVE_HOLDS = 2;
 
 export type BookingStatus = "pending" | "paid" | "expired";
 
@@ -41,6 +43,8 @@ export interface BookingDoc {
   stripeSessionId?: string;
   stripePaymentIntentId?: string;
   customer?: { name: string | null; email: string | null; phone: string | null };
+  /** Hash anonimo del visitante (ver lib/client-id.ts). */
+  clientId?: string;
 }
 
 export interface BookingSummary {
@@ -130,7 +134,11 @@ export interface CreateCheckoutInput {
  * Aparta el cupo (transaccion en Firestore, evita sobreventa) y crea la sesion de Stripe Checkout.
  * Devuelve la URL de pago de Stripe.
  */
-export async function createBookingCheckout(input: CreateCheckoutInput, origin: string): Promise<{ url: string }> {
+export async function createBookingCheckout(
+  input: CreateCheckoutInput,
+  origin: string,
+  clientId: string,
+): Promise<{ url: string }> {
   assertReady();
   const pkg = getPackage(input.packageId);
   if (!pkg) throw new BookingError("invalid_package", "Please choose a package.");
@@ -147,6 +155,20 @@ export async function createBookingCheckout(input: CreateCheckoutInput, origin: 
   const ref = col.doc();
   const now = Date.now();
   const amountCents = priceCents(pkg, players);
+
+  // Evita que alguien aparte muchos horarios sin pagar.
+  const mine = await col.where("clientId", "==", clientId).get();
+  const activeHolds = mine.docs.filter((d) => {
+    const b = d.data() as BookingDoc;
+    return b.status === "pending" && b.holdExpiresAt > now;
+  }).length;
+  if (activeHolds >= MAX_ACTIVE_HOLDS) {
+    throw new BookingError(
+      "too_many_pending",
+      "You already have a booking waiting for payment. Please finish it or wait 30 minutes.",
+      429,
+    );
+  }
 
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(col.where("date", "==", input.date));
@@ -169,6 +191,7 @@ export async function createBookingCheckout(input: CreateCheckoutInput, origin: 
       status: "pending",
       holdExpiresAt: now + (HOLD_MIN + 1) * 60_000,
       createdAt: now,
+      clientId,
     };
     tx.set(ref, doc);
   });

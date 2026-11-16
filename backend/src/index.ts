@@ -9,3 +9,24 @@ export {
   type BookingSummary,
   type CreateCheckoutInput,
 } from "./services/booking.service";
+export { clientIdFromHeaders } from "./lib/client-id";
+export {
+  InquiryError,
+  createInquiry,
+  listInquiries,
+  type InquiryInput,
+  type InquirySummary,
+  type InquiryType,
+} from "./services/inquiry.service";
+export {
+  ADMIN_COOKIE,
+  ADMIN_SESSION_MAX_AGE,
+  AdminError,
+  getAdminDashboard,
+  isAdminConfigured,
+  loginAdmin,
+  verifyAdminSession,
+  type AdminBooking,
+  type AdminDashboard,
+  type DayRevenue,
+} from "./services/admin.service";

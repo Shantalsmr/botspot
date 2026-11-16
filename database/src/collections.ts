@@ -6,6 +6,10 @@
 export const COLLECTIONS = {
   /** Reservas de batallas / fiestas. Primera funcion a construir (ver ROADMAP.md). */
   bookings: "bookings",
+  /** Formularios: eventos corporativos / arenas moviles y lista de espera STEAM. */
+  inquiries: "inquiries",
+  /** Intentos fallidos de entrar al panel /admin (para bloquear ataques de fuerza bruta). */
+  adminLoginAttempts: "adminLoginAttempts",
   /** Documentos internos, p. ej. la prueba de conexion. */
   system: "_system",
 } as const;
