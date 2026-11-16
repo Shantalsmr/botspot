@@ -24,6 +24,7 @@ export default function ContactPage() {
                 <a href={telHref(phone)}>{phone}</a>
               </p>
             ))}
+            <p className="muted">We speak {site.phoneLanguages}.</p>
           </div>
           <div className="card">
             <h3>Email</h3>

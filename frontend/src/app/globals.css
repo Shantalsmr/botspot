@@ -1,6 +1,7 @@
 /* =========================================================
    The Bot Spot – estilos globales
-   Colores tomados del sitio original (negro, cian neon, rojo)
+   Paleta de marca: negro (principal), naranja (secundario) y blanco.
+   El naranja exacto de la marca esta por confirmar (ver ROADMAP.md).
    ========================================================= */
 
 :root {
@@ -10,13 +11,14 @@
   --color-border: #2c3036;
   --color-text: #ffffff;
   --color-muted: #a7b0ba;
-  --color-accent: #19ffff;
-  --color-accent-dark: #00b8c4;
+  --color-accent: #ff7a00;
+  --color-accent-dark: #d95f00;
   --color-danger: #db0000;
 
   --radius: 14px;
-  --shadow-glow: 0 0 24px rgba(25, 255, 255, 0.25);
+  --shadow-glow: 0 0 24px rgba(255, 122, 0, 0.25);
   --container: 1160px;
+  --font-display: var(--font-barlow), "Arial Narrow", sans-serif;
   --font-sans: var(--font-figtree), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -157,7 +159,7 @@ p {
 }
 
 .btn-primary:hover {
-  background: #7affff;
+  background: #ff9a3d;
 }
 
 .btn-outline {
@@ -166,7 +168,7 @@ p {
 }
 
 .btn-outline:hover {
-  background: rgba(25, 255, 255, 0.1);
+  background: rgba(255, 122, 0, 0.1);
 }
 
 .actions {
@@ -315,7 +317,7 @@ p {
 .page-header {
   padding: 56px 0 40px;
   background:
-    radial-gradient(circle at 15% 0%, rgba(25, 255, 255, 0.18), transparent 45%),
+    radial-gradient(circle at 15% 0%, rgba(255, 122, 0, 0.18), transparent 45%),
     linear-gradient(180deg, #0b0d10, #000);
   border-bottom: 1px solid var(--color-border);
 }
@@ -344,7 +346,7 @@ p {
 
 .hero {
   padding: 32px 0 56px;
-  background: radial-gradient(circle at 50% 0%, rgba(25, 255, 255, 0.15), transparent 60%);
+  background: radial-gradient(circle at 50% 0%, rgba(255, 122, 0, 0.15), transparent 60%);
 }
 
 .hero-banner {
@@ -673,4 +675,185 @@ p {
 .booking-summary dd {
   margin: 0;
   word-break: break-all;
+}
+
+/* ---------- Inicio: arena animada ---------- */
+.display {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 0.95;
+}
+
+h1.display {
+  font-size: clamp(3rem, 9vw, 6.5rem);
+}
+
+h2.display {
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+}
+
+.home {
+  position: relative;
+  isolation: isolate;
+}
+
+.arena-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  display: block;
+}
+
+.hero-arena {
+  position: relative;
+  min-height: calc(100svh - 72px);
+  display: flex;
+  align-items: center;
+  padding: 48px 0 96px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.35) 55%, transparent 80%);
+}
+
+.hero-arena-copy {
+  width: 100%;
+}
+
+.hero-arena-copy > * {
+  max-width: 640px;
+}
+
+.hero-arena .eyebrow {
+  letter-spacing: 0.25em;
+}
+
+.hero-lead {
+  font-size: 1.2rem;
+  color: #d8dce2;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+.hero-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  list-style: none;
+  padding: 0;
+  margin: 1.4rem 0 0;
+  color: #d8dce2;
+  font-size: 0.95rem;
+}
+
+.hero-checks li::before {
+  content: "✓ ";
+  color: var(--color-accent);
+  font-weight: 800;
+}
+
+.scroll-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  width: 26px;
+  height: 42px;
+  margin-left: -13px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 14px;
+}
+
+.scroll-hint span {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  width: 4px;
+  height: 8px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--color-accent);
+  animation: scroll-hint 1.6s ease-in-out infinite;
+}
+
+@keyframes scroll-hint {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+}
+
+/* Secciones semitransparentes: la arena se ve detras */
+.glass {
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass .card {
+  background: rgba(20, 20, 22, 0.85);
+}
+
+.step-number {
+  display: block;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 3.4rem;
+  line-height: 1;
+  color: var(--color-accent);
+  margin-bottom: 0.3rem;
+}
+
+.step {
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.step:hover {
+  transform: translateY(-4px);
+  border-color: var(--color-accent);
+}
+
+.promo {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-glow);
+}
+
+.promo-expires {
+  color: var(--color-accent);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* Entrada al hacer scroll (solo con JS y sin "reducir movimiento") */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-ready .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .reveal-ready .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-hint span {
+    animation: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .hero-arena {
+    align-items: flex-start;
+    padding-top: 32px;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.3) 60%, transparent 85%);
+  }
 }

@@ -32,7 +32,7 @@ export default function CancellationPolicyPage() {
           </ul>
           <p>Refunds are processed within 5–10 business days to the original payment method.</p>
           <p>
-            To cancel or reschedule, call us at {site.phones[1]} or email{" "}
+            To cancel or reschedule, call us at {site.phones[0]} or email{" "}
             <a href={`mailto:${site.email}`}>{site.email}</a> with your confirmation number.
           </p>
         </div>

@@ -9,14 +9,16 @@ export const site = {
     "Downtown Provo's family robot arcade. Battle weaponized robots, play classic arcade games and celebrate your birthday with robot-powered fun.",
   url: "https://thebotspot.org",
   email: "info@thebotspot.org",
-  phones: ["(385) 567-6502", "(385) 283-2039"],
+  phones: ["(385) 283-2039"],
+  /** Por telefono atienden en ingles y espanol (el sitio va solo en ingles). */
+  phoneLanguages: "English & Spanish",
   pricePerPerson: 25,
   city: "Downtown Provo, Utah",
   social: {
     facebook: "https://www.facebook.com/p/The-Bot-Spot-61582077369646/",
     instagram: "https://www.instagram.com/botspot_ut/",
   },
-  // Horarios tomados de la pagina de Contacto (ver ROADMAP.md: confirmar).
+  // Horario confirmado por el negocio (nov. 2026). Mantener igual a OPENING_HOURS en backend/src/catalog.ts.
   hours: [
     { days: "Mon – Thu", time: "5:00 PM – 9:30 PM" },
     { days: "Fri", time: "5:00 PM – 10:30 PM" },
@@ -55,9 +57,10 @@ export const activities: Activity[] = [
       "Enjoy timeless favorites like air hockey, foosball, and more, perfect for quick matches and friendly competition.",
   },
   {
-    icon: "🍿",
-    title: "Snacks & Refreshments",
-    description: "Refuel between games with chips, soft drinks, and snacks that keep the energy going.",
+    icon: "🚚",
+    title: "Mobile Arenas",
+    description:
+      "We bring the robot arena to your business, school, university or event. Custom quotes for every group.",
   },
   {
     icon: "🎉",
@@ -87,7 +90,7 @@ export const faqs: Faq[] = [
   {
     question: "Do you host birthday parties?",
     answer:
-      "Yes! We offer birthday party packages that include arcade games, robot battles, and space for cake, pizza and presents. Contact us to book your spot.",
+      "Yes! Book robot battles for your whole group online, or reserve the entire venue for a private event. Contact us if you need help planning.",
   },
   {
     question: "How many people can play in the robot battle arenas?",
@@ -99,17 +102,12 @@ export const faqs: Faq[] = [
       "Walk-ins are welcome, but we recommend reservations for parties and weekends to guarantee your spot.",
   },
   {
-    question: "Can I bring my own food or cake?",
-    answer:
-      "Outside food is not allowed, but birthday cakes are welcome with party reservations. We also offer snacks, ice cream, chips, and drinks on-site.",
-  },
-  {
     question: "What are your hours of operation?",
     answer: site.hours.map((h) => `${h.days}: ${h.time}`).join(" · "),
   },
   {
     question: "Do you have group rates?",
-    answer: "Yes! We offer discounted packages for groups, schools, and corporate events. Reach out for custom pricing.",
+    answer: "Yes! Group packages are applied automatically when you book online. For schools and corporate events, contact us for a custom quote.",
   },
   {
     question: "Is the arcade family-friendly?",
@@ -129,6 +127,19 @@ export const faqs: Faq[] = [
     answer: "Use them today, tomorrow, or next year — fun doesn't have an expiration date at The Bot Spot!",
   },
 ];
+
+export interface Promotion {
+  title: string;
+  description: string;
+  /** Ultimo dia de la promocion (YYYY-MM-DD). Despues de esa fecha deja de mostrarse. */
+  expires: string;
+}
+
+/**
+ * Promociones semanales del inicio. Vacio = la seccion no se muestra.
+ * El negocio avisa cuando tenga promociones (ver ROADMAP.md).
+ */
+export const promotions: Promotion[] = [];
 
 export function telHref(phone: string): string {
   return `tel:+1${phone.replace(/\D/g, "")}`;

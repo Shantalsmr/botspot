@@ -42,6 +42,18 @@ precios en `backend/src/catalog.ts`, horario L–J 5–9:30 PM, V 5–10:30 PM, 
 
 ---
 
+## 🎨 Rediseño (rama `rediseno-arena`, pendiente de aprobar)
+
+- [x] Inicio con arena de robots animada en 3D (`ArenaCanvas`): reflectores, robots que chocan con chispas, cámara que se inclina con el scroll
+- [x] Paleta negro / naranja / blanco; títulos en Barlow Condensed
+- [x] Sin precios en el inicio; sección de promociones semanales lista (`promotions` en `site.ts`, se oculta si está vacía)
+- [x] Comida eliminada del sitio; un solo teléfono publicado + "We speak English & Spanish"
+- [ ] Confirmar el naranja exacto de la marca (hoy `#ff7a00` en `globals.css`)
+- [ ] Videos de clientes jugando (loop) y reviews de Google en el inicio — faltan los archivos
+- [ ] Logo y colores oficiales en archivo
+
+---
+
 ## Fases siguientes (sin fecha todavía)
 
 ### Fase 2 – Formulario de contacto

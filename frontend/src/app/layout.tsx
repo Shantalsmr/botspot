@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Barlow_Condensed } from "next/font/google";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -10,6 +11,15 @@ const figtree = localFont({
   src: "../fonts/Figtree-VariableFont_wght.ttf",
   variable: "--font-figtree",
   weight: "300 900",
+  display: "swap",
+});
+
+// Tipografia de titulos: condensada, estilo deportivo/arena.
+const display = Barlow_Condensed({
+  subsets: ["latin"],
+  weight: ["700", "800"],
+  style: ["italic"],
+  variable: "--font-barlow",
   display: "swap",
 });
 
@@ -36,7 +46,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={figtree.variable}>
+    <html lang="en" className={`${figtree.variable} ${display.variable}`}>
       <body>
         <a href="#main" className="skip-link">
           Skip to content
