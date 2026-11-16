@@ -530,3 +530,147 @@ p {
   border-top: 1px solid var(--color-border);
   font-size: 0.9rem;
 }
+
+/* ---------- Reservas ---------- */
+.booking-container {
+  max-width: 760px;
+}
+
+.booking-form {
+  display: grid;
+  gap: 24px;
+}
+
+.booking-form fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.booking-form legend,
+.field > span {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.package-options {
+  display: grid;
+  gap: 10px;
+}
+
+.package-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.package-option input {
+  grid-row: span 2;
+  accent-color: var(--color-accent);
+}
+
+.package-option.is-selected {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-glow);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.field input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  color-scheme: dark;
+}
+
+.time-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.time-option {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.time-option.is-selected {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #000;
+}
+
+.checkbox {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.checkbox input {
+  margin-top: 4px;
+  accent-color: var(--color-accent);
+}
+
+.form-error {
+  color: #ff6b6b;
+  margin: 0;
+}
+
+.booking-total {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--color-border);
+  padding-top: 20px;
+}
+
+.booking-total strong {
+  display: block;
+  font-size: 2rem;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.small {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.booking-summary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 20px;
+  margin: 0;
+}
+
+.booking-summary dt {
+  color: var(--color-muted);
+}
+
+.booking-summary dd {
+  margin: 0;
+  word-break: break-all;
+}

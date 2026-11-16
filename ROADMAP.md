@@ -16,28 +16,29 @@ Vamos a avanzar **poco a poco**, una función a la vez. Cada fase se termina, se
 
 ---
 
-## 🔜 Fase 1 – Reservas (lo siguiente)
+## 🚧 Fase 1 – Reservas (en curso)
 
-Reemplaza el plugin BookingPress de WordPress. Páginas: `/book-appointment`, `/thank-you`, `/my-bookings`.
+Reemplaza el plugin BookingPress de WordPress. Datos del negocio confirmados (Notion, nov. 2026):
+precios en `backend/src/catalog.ts`, horario L–J 5–9:30 PM, V 5–10:30 PM, S 12–10:30 PM, domingo cerrado.
 
-**Antes de empezar, definir con el negocio:**
+**Hecho:**
 
-- [ ] Tipos de reserva (p. ej. batalla de robots, fiesta de cumpleaños, grupo/evento) y precio de cada una ($25 por persona)
-- [ ] Duración de cada sesión y cuántas personas por arena (máx. 8, 2 arenas)
-- [ ] Horarios disponibles (confirmar: la página de Contacto y el FAQ tenían horarios distintos)
-- [ ] ¿Se paga en línea al reservar o se paga en el local?
-- [ ] ¿Quién recibe el aviso de una reserva nueva (correo, WhatsApp...)?
+- [x] Catálogo: batalla 30 min ($15/persona), 1 hora ($25/persona o grupos 4=$90, 8=$150, 16=$280), evento privado 2 h ($400)
+- [x] Capacidad 16 personas a la vez; bloques de 30 min; el cupo se aparta 30 min mientras se paga (transacción Firestore)
+- [x] `GET /api/bookings/availability`, `POST /api/bookings/checkout` (Stripe Checkout), `POST /api/stripe/webhook`
+- [x] `/book-appointment`, `/thank-you` (confirma el pago con Stripe), `/cancellation-policy` (propuesta)
+- [x] Probado en local con tarjeta de test 4242
 
-**Trabajo técnico:**
+**Pendiente:**
 
-- [ ] `database`: tipo `Booking` y colección `bookings` en Firestore
-- [ ] `backend`: servicio de reservas (crear, validar, revisar disponibilidad, cancelar)
-- [ ] `frontend`: rutas `POST /api/bookings` y `GET /api/bookings/availability`
-- [ ] `frontend`: formulario de reserva en `/book-appointment` (fecha, hora, personas, datos de contacto)
-- [ ] `frontend`: página `/thank-you` con el número de reserva
-- [ ] Correo de confirmación al cliente y aviso al negocio
-- [ ] `/my-bookings`: el cliente consulta su reserva (con correo + número de reserva)
-- [ ] Panel simple para que el negocio vea las reservas del día
+- [ ] Variables en Vercel (Stripe + Firebase) y webhook en Stripe → `/api/stripe/webhook`
+- [ ] Aprobar con el negocio: política de cancelación y precio de grupos intermedios (p. ej. 6 personas = $140)
+- [ ] Limitar reservas pendientes por visitante (evitar que alguien aparte cupos sin pagar)
+- [ ] Aviso al negocio por correo (info@thebotspot.org) en cada reserva
+- [ ] `/my-bookings` y panel para ver las reservas del día
+- [ ] Pasar a claves live de Stripe (cuenta activada con EIN y banco de The Bot Spot)
+- [ ] Formularios: eventos corporativos (correo, teléfono, dirección, tipo) y lista de espera STEAM
+
 
 ---
 

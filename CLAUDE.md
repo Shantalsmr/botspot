@@ -48,6 +48,9 @@ Flujo obligatorio: **`frontend` (página o `app/api/*/route.ts`) → `backend` (
 - **Servicios** en `backend/src/services/<nombre>.service.ts`.
 - **Colecciones** de Firestore declaradas solo en `database/src/collections.ts` (`COLLECTIONS`).
 - **Firestore**: usar `getDb()` (singleton, reutilizado entre invocaciones serverless).
+- **Stripe**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`. Cliente en
+  `backend/src/lib/stripe.ts`. Precios, horario y capacidad de reservas en `backend/src/catalog.ts` (módulo puro,
+  importable desde el cliente como `@botspot/backend/catalog`); el precio siempre se calcula en el servidor.
 - **Variables de entorno** (`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`) se leen en
   `database/src/env.ts`; si faltan, el sitio sigue funcionando sin base de datos. Local: `frontend/.env.local`.
 - **Datos del negocio** (teléfonos, horarios, precio, FAQ, actividades, nav) viven en `frontend/src/content/site.ts`;
@@ -65,7 +68,7 @@ Flujo obligatorio: **`frontend` (página o `app/api/*/route.ts`) → `backend` (
 
 ## Plan de trabajo
 
-Ver `ROADMAP.md`. Fase 0 (base) lista; **siguiente: Fase 1 – Reservas** (`/book-appointment`, `/thank-you`,
+Ver `ROADMAP.md`. Fase 0 (base) lista; **en curso: Fase 1 – Reservas con pago Stripe** (`/book-appointment`, `/thank-you`,
 `/my-bookings`, colección `bookings`). Avanzar una fase a la vez: terminar, probar y desplegar antes de seguir.
 
 La copia original de WordPress está en el historial de git (commit `14ef4ba`).
