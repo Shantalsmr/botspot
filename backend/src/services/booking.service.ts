@@ -19,6 +19,7 @@ import {
   type DayAvailability,
   type PackageId,
 } from "../catalog";
+import { OWNER_EMAIL, sendEmail } from "../lib/email";
 import { getStripe, isStripeConfigured } from "../lib/stripe";
 
 /** Tiempo que un cupo queda apartado mientras el cliente paga (Stripe exige minimo 30 min). */
@@ -45,6 +46,10 @@ export interface BookingDoc {
   customer?: { name: string | null; email: string | null; phone: string | null };
   /** Hash anonimo del visitante (ver lib/client-id.ts). */
   clientId?: string;
+  /** Cuenta del cliente, si reservo con sesion iniciada. */
+  customerId?: string;
+  /** Solicitud de cancelacion/cambio: "open" mientras los duenos la revisan. */
+  requestStatus?: "open" | "done";
 }
 
 export interface BookingSummary {
@@ -138,6 +143,7 @@ export async function createBookingCheckout(
   input: CreateCheckoutInput,
   origin: string,
   clientId: string,
+  account: { id: string; email: string } | null = null,
 ): Promise<{ url: string }> {
   assertReady();
   const pkg = getPackage(input.packageId);
@@ -192,6 +198,7 @@ export async function createBookingCheckout(
       holdExpiresAt: now + (HOLD_MIN + 1) * 60_000,
       createdAt: now,
       clientId,
+      ...(account ? { customerId: account.id } : {}),
     };
     tx.set(ref, doc);
   });
@@ -214,6 +221,7 @@ export async function createBookingCheckout(
         },
       ],
       customer_creation: "always",
+      ...(account ? { customer_email: account.email } : {}),
       phone_number_collection: { enabled: true },
       client_reference_id: ref.id,
       metadata: { bookingId: ref.id },
@@ -235,30 +243,59 @@ export async function createBookingCheckout(
   }
 }
 
-/** Marca la reserva como pagada a partir de una sesion de Checkout (idempotente). */
+/**
+ * Marca la reserva como pagada a partir de una sesion de Checkout. Idempotente: si ya estaba
+ * pagada no cambia nada (ni la fecha de pago) y el aviso a los duenos se envia una sola vez.
+ */
 async function applySession(session: Stripe.Checkout.Session): Promise<string | null> {
   const bookingId = session.metadata?.bookingId;
   if (!bookingId) return null;
-  const ref = getDb().collection(COLLECTIONS.bookings).doc(bookingId);
+  const db = getDb();
+  const ref = db.collection(COLLECTIONS.bookings).doc(bookingId);
   if (session.payment_status === "paid") {
     const details = session.customer_details;
-    await ref.update({
-      status: "paid",
-      paidAt: Date.now(),
-      stripeSessionId: session.id,
-      stripePaymentIntentId:
-        typeof session.payment_intent === "string" ? session.payment_intent : (session.payment_intent?.id ?? null),
-      customer: {
-        name: details?.name ?? null,
-        email: details?.email ?? null,
-        phone: details?.phone ?? null,
-      },
+    const newlyPaid = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const current = snap.data() as BookingDoc | undefined;
+      if (!current || current.status === "paid") return null;
+      const customer = { name: details?.name ?? null, email: details?.email ?? null, phone: details?.phone ?? null };
+      tx.update(ref, {
+        status: "paid",
+        paidAt: Date.now(),
+        stripeSessionId: session.id,
+        stripePaymentIntentId:
+          typeof session.payment_intent === "string" ? session.payment_intent : (session.payment_intent?.id ?? null),
+        customer,
+      });
+      return { ...current, customer };
     });
+    if (newlyPaid) await notifyOwnersNewBooking(bookingId, newlyPaid);
   } else if (session.status === "expired") {
     const snap = await ref.get();
     if (snap.exists && (snap.data() as BookingDoc).status === "pending") await ref.update({ status: "expired" });
   }
   return bookingId;
+}
+
+async function notifyOwnersNewBooking(id: string, b: BookingDoc): Promise<void> {
+  const pkg = getPackage(b.packageId)?.name ?? b.packageId;
+  await sendEmail({
+    to: OWNER_EMAIL,
+    subject: `New booking: ${b.date} at ${formatTime(b.startMin)} · ${b.players} players`,
+    replyTo: b.customer?.email ?? undefined,
+    text: `New paid booking!
+
+${pkg}
+Date: ${b.date} at ${formatTime(b.startMin)}
+Players: ${b.players}
+Paid: ${formatPrice(b.amountCents)}
+
+Customer: ${b.customer?.name ?? "-"}
+Email: ${b.customer?.email ?? "-"}
+Phone: ${b.customer?.phone ?? "-"}
+
+Confirmation #: ${id}`,
+  });
 }
 
 /** Usado por /thank-you: confirma el pago con Stripe y devuelve el resumen. */

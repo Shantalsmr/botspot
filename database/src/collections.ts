@@ -10,6 +10,14 @@ export const COLLECTIONS = {
   inquiries: "inquiries",
   /** Intentos fallidos de entrar al panel /admin (para bloquear ataques de fuerza bruta). */
   adminLoginAttempts: "adminLoginAttempts",
+  /** Cuentas de clientes (opcionales). Id = hash del correo. */
+  customers: "customers",
+  /** Intentos fallidos de inicio de sesion de clientes. */
+  customerLoginAttempts: "customerLoginAttempts",
+  /** Enlaces para crear contrasena nueva (id = hash del token). */
+  passwordResets: "passwordResets",
+  /** Solicitudes de cancelacion o cambio de una reserva. */
+  bookingRequests: "bookingRequests",
   /** Documentos internos, p. ej. la prueba de conexion. */
   system: "_system",
 } as const;

@@ -46,8 +46,16 @@ export function SiteHeader() {
               </li>
             ))}
           </ul>
+          <Link
+            href="/account"
+            className="account-link"
+            aria-current={pathname.startsWith("/account") ? "page" : undefined}
+            onClick={() => setOpen(false)}
+          >
+            <span aria-hidden="true">👤</span> My account
+          </Link>
           <Link href="/book-appointment" className="btn btn-primary" onClick={() => setOpen(false)}>
-            🤖 Book an Appointment
+            🤖 Book now
           </Link>
         </nav>
       </div>

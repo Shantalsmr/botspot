@@ -30,3 +30,24 @@ export {
   type AdminDashboard,
   type DayRevenue,
 } from "./services/admin.service";
+export { isEmailConfigured } from "./lib/email";
+export {
+  AccountError,
+  CUSTOMER_COOKIE,
+  CUSTOMER_SESSION_MAX_AGE,
+  getCustomerFromSession,
+  loginCustomer,
+  registerCustomer,
+  requestPasswordReset,
+  resetPassword,
+  updateCustomerProfile,
+  type Customer,
+} from "./services/customer.service";
+export {
+  RequestError,
+  createBookingRequest,
+  listCustomerBookings,
+  resolveRequest,
+  type AdminRequest,
+  type CustomerBooking,
+} from "./services/booking-request.service";

@@ -47,12 +47,17 @@ export function SiteFooter() {
             </a>
           </p>
           <p>
-            <Link href="/my-bookings">My Bookings</Link>
+            <Link href="/account">My account & bookings</Link>
           </p>
         </div>
       </div>
       <div className="container footer-bottom muted">
-        © {year} {site.name}. All rights reserved.
+        <span>
+          © {year} {site.name}. All rights reserved.
+        </span>
+        <Link href="/admin" className="footer-admin">
+          Owners login
+        </Link>
       </div>
     </footer>
   );

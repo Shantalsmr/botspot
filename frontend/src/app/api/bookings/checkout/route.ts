@@ -1,4 +1,5 @@
 import { clientIdFromHeaders, createBookingCheckout, fail, ok, type CreateCheckoutInput } from "@botspot/backend";
+import { currentCustomer } from "@/lib/server";
 import { bookingErrorResponse } from "../handle-error";
 
 export const runtime = "nodejs";
@@ -14,7 +15,10 @@ export async function POST(request: Request): Promise<Response> {
   }
   try {
     const clientId = clientIdFromHeaders(request.headers.get("x-forwarded-for"));
-    return ok(await createBookingCheckout(body, new URL(request.url).origin, clientId));
+    // Si el cliente tiene sesion, la reserva queda en su cuenta y Stripe ya trae su correo.
+    const customer = await currentCustomer();
+    const account = customer ? { id: customer.id, email: customer.email } : null;
+    return ok(await createBookingCheckout(body, new URL(request.url).origin, clientId, account));
   } catch (error) {
     return bookingErrorResponse(error);
   }

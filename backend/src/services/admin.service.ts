@@ -3,6 +3,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { COLLECTIONS, getDb, isDatabaseConfigured } from "@botspot/database";
 import { addDays, formatPrice, formatTime, getPackage, nowInProvo } from "../catalog";
 import type { BookingDoc } from "./booking.service";
+import { listOpenRequests, type AdminRequest } from "./booking-request.service";
 import { listInquiries, type InquirySummary } from "./inquiry.service";
 
 /**
@@ -112,6 +113,8 @@ export interface AdminDashboard {
   /** Ingresos de los ultimos 30 dias, por dia de pago (hora de Provo). */
   daily: DayRevenue[];
   upcoming: AdminBooking[];
+  /** Solicitudes de cancelacion/cambio abiertas. */
+  requests: AdminRequest[];
   inquiries: InquirySummary[];
 }
 
@@ -177,6 +180,7 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
     playersToday: todays.reduce((n, { b }) => n + b.players, 0),
     daily: [...byDay.values()],
     upcoming: upcomingDocs.map(({ id, b }) => toAdminBooking(id, b)),
+    requests: await listOpenRequests(),
     inquiries: await listInquiries(50),
   };
 }

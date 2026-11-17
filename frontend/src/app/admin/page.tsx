@@ -8,7 +8,7 @@ import {
   type AdminBooking,
   type AdminDashboard,
 } from "@botspot/backend";
-import { AdminLogin, AdminLogout } from "@/components/AdminAuth";
+import { AdminLogin, AdminLogout, ResolveRequestButton } from "@/components/AdminAuth";
 import { telHref } from "@/content/site";
 
 export const metadata: Metadata = {
@@ -21,6 +21,13 @@ export const dynamic = "force-dynamic";
 
 const money = (cents: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(cents / 100);
+
+const POLICY_LABEL: Record<string, string> = {
+  full_refund: "7+ days away → full refund",
+  reschedule_or_credit: "48 h – 7 days → reschedule or credit",
+  no_refund: "Less than 48 h → no refund",
+  past: "Already happened",
+};
 
 /** "+13855551234" -> "(385) 555-1234" (otros formatos se dejan igual). */
 function usPhone(phone: string): string {
@@ -88,6 +95,41 @@ function Dashboard({ data }: { data: AdminDashboard }) {
         </div>
 
         <RevenueChart data={data} />
+
+        {data.requests.length > 0 ? (
+          <>
+            <h2 className="admin-h2">⚠️ Cancellation & change requests ({data.requests.length})</h2>
+            <p className="muted small">
+              Refunds are done in Stripe (Payments → the payment → Refund). Then mark the request as handled.
+            </p>
+            <div className="grid grid-3">
+              {data.requests.map((r) => (
+                <article key={r.id} className="card request-card">
+                  <span className="badge">{r.type === "cancel" ? "Cancel" : "Change date"}</span>
+                  <h3>
+                    {niceDate(r.bookingDate)} · {r.bookingTime}
+                  </h3>
+                  <p className="muted">
+                    {r.packageName} · {r.players} players · {r.amount}
+                  </p>
+                  <p>
+                    <strong>Policy:</strong> {POLICY_LABEL[r.policy]}
+                  </p>
+                  {r.message ? <p className="inquiry-message">“{r.message}”</p> : null}
+                  <p>
+                    {r.customerName ?? "—"}
+                    <br />
+                    {r.customerPhone ? <a href={telHref(usPhone(r.customerPhone))}>{usPhone(r.customerPhone)}</a> : null}
+                    {r.customerPhone && r.customerEmail ? <br /> : null}
+                    {r.customerEmail ? <a href={`mailto:${r.customerEmail}`}>{r.customerEmail}</a> : null}
+                  </p>
+                  <p className="muted small">Confirmation #{r.bookingId}</p>
+                  <ResolveRequestButton id={r.id} />
+                </article>
+              ))}
+            </div>
+          </>
+        ) : null}
 
         <h2 className="admin-h2">Upcoming bookings (next 14 days)</h2>
         {data.upcoming.length === 0 ? (

@@ -59,6 +59,30 @@ export function AdminLogin() {
   );
 }
 
+/** Marca una solicitud de cancelacion/cambio como atendida. */
+export function ResolveRequestButton({ id }: { id: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      type="button"
+      className="btn btn-primary btn-small"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        await fetch("/api/admin/requests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        });
+        router.refresh();
+      }}
+    >
+      {busy ? "Saving…" : "Mark as handled"}
+    </button>
+  );
+}
+
 /** Boton para cerrar la sesion del panel. */
 export function AdminLogout() {
   const router = useRouter();
