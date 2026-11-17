@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PasswordInput } from "./PasswordInput";
 
 type ApiResponse<T = unknown> = { ok: true; data: T } | { ok: false; error: { code: string; message: string } };
 
@@ -78,9 +79,8 @@ export function AuthForm({ mode, next }: { mode: "login" | "register"; next: str
       </label>
       <label className="field">
         <span>Password</span>
-        <input
+        <PasswordInput
           name="password"
-          type="password"
           autoComplete={mode === "login" ? "current-password" : "new-password"}
           minLength={8}
           required
@@ -162,7 +162,7 @@ export function ResetForm({ token }: { token: string }) {
     >
       <label className="field">
         <span>New password</span>
-        <input name="password" type="password" autoComplete="new-password" minLength={8} required />
+        <PasswordInput name="password" autoComplete="new-password" minLength={8} required />
         <small className="muted">At least 8 characters.</small>
       </label>
       <ErrorText error={error} />

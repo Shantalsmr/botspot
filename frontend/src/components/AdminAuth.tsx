@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PasswordInput } from "./PasswordInput";
 
 type ApiResponse = { ok: true } | { ok: false; error: { message: string } };
 
@@ -38,8 +39,7 @@ export function AdminLogin() {
       <h2>Owners&apos; dashboard</h2>
       <label className="field">
         <span>Password</span>
-        <input
-          type="password"
+        <PasswordInput
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
