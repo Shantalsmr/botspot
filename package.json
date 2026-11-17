@@ -16,5 +16,9 @@
   },
   "engines": {
     "node": ">=20.9.0"
+  },
+  "allowScripts": {
+    "protobufjs@7.6.6": true,
+    "@firebase/util@1.15.3": true
   }
 }
