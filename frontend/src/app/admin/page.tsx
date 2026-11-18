@@ -11,7 +11,7 @@ import {
   type SourceTotals,
 } from "@botspot/backend";
 import { AdminLogin, AdminLogout, ResolveRequestButton } from "@/components/AdminAuth";
-import { DeleteTerminalSale, GiftCardDesk, TerminalSaleForm } from "@/components/AdminTools";
+import { DeleteTerminalSale, GiftCardDesk, TerminalSaleForm, TerminalSyncPanel } from "@/components/AdminTools";
 import { telHref } from "@/content/site";
 
 export const metadata: Metadata = {
@@ -104,7 +104,11 @@ function Dashboard({ data }: { data: AdminDashboard }) {
         <h2 className="admin-h2">Front desk</h2>
         <div className="grid grid-2 admin-tools">
           <GiftCardDesk />
-          <TerminalSaleForm today={data.today} />
+          <div className="admin-stack">
+            <TerminalSyncPanel providers={data.terminalSync} />
+            {/* Registro a mano: solo hace falta mientras Clover no este conectado. */}
+            <TerminalSaleForm today={data.today} />
+          </div>
         </div>
 
         {data.requests.length > 0 ? (
@@ -191,9 +195,9 @@ function Dashboard({ data }: { data: AdminDashboard }) {
           ))
         )}
 
-        <h2 className="admin-h2">Terminal sales (Clover)</h2>
+        <h2 className="admin-h2">Terminal sales</h2>
         {data.terminalSales.length === 0 ? (
-          <p className="muted">No terminal sales added yet. Use “Add terminal sales” above.</p>
+          <p className="muted">No terminal sales yet. Connect Clover or add them by hand above.</p>
         ) : (
           <div className="table-wrap">
             <table className="admin-table">
@@ -201,6 +205,7 @@ function Dashboard({ data }: { data: AdminDashboard }) {
                 <tr>
                   <th>Day</th>
                   <th>Location</th>
+                  <th>Source</th>
                   <th>Note</th>
                   <th className="num">Amount</th>
                   <th />
@@ -211,10 +216,11 @@ function Dashboard({ data }: { data: AdminDashboard }) {
                   <tr key={t.id}>
                     <td>{niceDate(t.date)}</td>
                     <td>{t.locationLabel}</td>
+                    <td>{t.sourceLabel}</td>
                     <td>{t.note ?? "—"}</td>
                     <td className="num">{t.amount}</td>
                     <td>
-                      <DeleteTerminalSale id={t.id} />
+                      {(t.source ?? "manual") === "manual" ? <DeleteTerminalSale id={t.id} /> : null}
                     </td>
                   </tr>
                 ))}
@@ -337,7 +343,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 const SOURCES: { key: RevenueSource; label: string }[] = [
   { key: "bookings", label: "Online bookings" },
   { key: "shop", label: "Online shop" },
-  { key: "terminal", label: "Terminal (Clover)" },
+  { key: "terminal", label: "Terminal (in store)" },
 ];
 
 /** De donde viene el dinero: hoy, 7 dias y mes, separado por origen. */

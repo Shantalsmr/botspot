@@ -1687,3 +1687,51 @@ h2.display {
   color: var(--color-accent);
   font-family: ui-monospace, Consolas, monospace;
 }
+
+.admin-stack {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+}
+
+.sync-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sync-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.sync-list li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.sync-hint {
+  display: block;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-border);
+}
+
+.status-dot.is-on {
+  background: #3ecf8e;
+}
+
+.status-dot.is-error {
+  background: var(--color-danger);
+}

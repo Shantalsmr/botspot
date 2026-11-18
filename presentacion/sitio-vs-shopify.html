@@ -75,15 +75,15 @@ code { background: var(--surface); border: 1px solid var(--line); border-radius:
           <tr><td>Precios por grupo (4 = $90, 8 = $150, 16 = $280) y evento privado</td><td><span class="pill yes">Sí</span>Calculados automáticamente</td><td><span class="pill part">Parcial</span>Se simula con variantes; no se combina bien con el cupo</td></tr>
           <tr><td>Tienda: gift cards, pases, fiestas, merch</td><td><span class="pill yes">Sí</span>Carrito y pago con Stripe</td><td><span class="pill yes">Sí</span>Es su fuerte; gift cards nativas</td></tr>
           <tr><td>Gift cards con código, canje en el local y al reservar en línea</td><td><span class="pill yes">Sí</span>Código al pagar, canje en /admin y descuento al reservar</td><td><span class="pill yes">Sí</span>Nativas en la tienda y en Shopify POS; para usarlas en reservas depende de la app</td></tr>
-          <tr><td>Ventas separadas: reservas, tienda y terminal del local</td><td><span class="pill part">Parcial</span>Reservas y tienda automáticas; Clover se registra a mano en /admin</td><td><span class="pill part">Parcial</span>Automático si se cambia a Shopify POS; Clover tampoco se conecta</td></tr>
-          <tr><td>Los dueños agregan o cambian productos solos</td><td><span class="pill part">Todavía no</span>Hoy se cambian en el código; se puede agregar un editor en /admin</td><td><span class="pill yes">Sí</span>Desde su panel</td></tr>
-          <tr><td>Vender en el local (caja / POS)</td><td><span class="pill no">No</span>Se usaría Stripe Terminal o Square aparte</td><td><span class="pill yes">Sí</span>Shopify POS</td></tr>
+          <tr><td>Ventas separadas: reservas, tienda y terminal del local</td><td><span class="pill yes">Sí</span>Todo automático: las ventas de Clover (y de Stripe Terminal, si la usan) entran solas al panel cada noche</td><td><span class="pill part">Parcial</span>Automático solo si cambian a Shopify POS; Clover no se conecta</td></tr>
+          <tr><td>Cambios en productos, precios, fotos y textos</td><td><span class="pill yes">Incluido</span>Los pide el dueño y se hacen como parte de la mensualidad</td><td><span class="pill part">Los hace el dueño</span>Desde su panel; diseño y cambios grandes, con un programador aparte</td></tr>
+          <tr><td>Vender en el local (caja / POS)</td><td><span class="pill yes">Sí</span>Siguen con su Clover, conectada al panel y a las gift cards del sitio; Stripe Terminal como opción</td><td><span class="pill yes">Sí</span>Shopify POS, pero habría que dejar Clover</td></tr>
           <tr><td>Panel: ingresos del día, semana y mes, próximas reservas</td><td><span class="pill yes">Sí</span>Todo en una sola pantalla (/admin)</td><td><span class="pill part">Parcial</span>Reportes de ventas sí; reservas quedan en la app aparte</td></tr>
           <tr><td>Cuentas de clientes con sus reservas y solicitudes de cambio</td><td><span class="pill yes">Sí</span>Con la política de cancelación del negocio</td><td><span class="pill part">Con app</span>Depende de la app de reservas</td></tr>
           <tr><td>Formularios: eventos, STEAM, contacto</td><td><span class="pill yes">Sí</span>Llegan al panel de los dueños</td><td><span class="pill part">Básico</span>Formulario de contacto sí; los demás con apps</td></tr>
           <tr><td>Diseño propio con la arena 3D animada</td><td><span class="pill yes">Sí</span>Ya está hecho</td><td><span class="pill part">Pagando</span>Tema a medida hecho por un programador</td></tr>
           <tr><td>Dos direcciones (arena en Provo, clases en Orem)</td><td><span class="pill yes">Sí</span>Mapa y direcciones en /location</td><td><span class="pill yes">Sí</span>Como página de contenido</td></tr>
-          <tr><td>Mantenimiento técnico</td><td><span class="pill part">Necesita</span>Alguien que haga cambios en el código</td><td><span class="pill yes">Incluido</span>Shopify se encarga</td></tr>
+          <tr><td>Mantenimiento técnico y soporte</td><td><span class="pill yes">Incluido</span>Hosting, actualizaciones y soporte con una persona que conoce el negocio</td><td><span class="pill part">Parcial</span>La plataforma sí; soporte general por chat, sin nadie que haga los cambios</td></tr>
         </tbody>
       </table>
     </div>
@@ -93,12 +93,13 @@ code { background: var(--surface); border: 1px solid var(--line); border-radius:
     <h2>Costo mensual aproximado</h2>
     <div class="cols">
       <div class="box money">
-        <h3>Sitio propio</h3>
-        <div class="cost-row"><span>Hosting Vercel (plan Pro, uso comercial)</span><span>$20</span></div>
-        <div class="cost-row"><span>Base de datos Firebase (nivel gratis)</span><span>$0</span></div>
-        <div class="cost-row"><span>Correos Resend (hasta 3,000/mes)</span><span>$0</span></div>
-        <div class="cost-row"><span>Stripe por venta</span><span>2.9% + 30¢</span></div>
-        <div class="cost-row"><span>Total fijo</span><span>≈ $20/mes</span></div>
+        <h3>Sitio propio · todo incluido</h3>
+        <div class="cost-row"><span>Hosting, base de datos y correos</span><span>Incluido</span></div>
+        <div class="cost-row"><span>Mantenimiento técnico y soporte</span><span>Incluido</span></div>
+        <div class="cost-row"><span>Cambios de productos, precios, fotos y textos</span><span>Incluido</span></div>
+        <div class="cost-row"><span>Conexión con Clover</span><span>Incluido</span></div>
+        <div class="cost-row"><span>Stripe por venta en línea</span><span>2.9% + 30¢</span></div>
+        <div class="cost-row"><span>Mensualidad</span><span>$250/mes</span></div>
       </div>
       <div class="box money">
         <h3>Shopify</h3>
@@ -106,10 +107,11 @@ code { background: var(--surface); border: 1px solid var(--line); border-radius:
         <div class="cost-row"><span>App de reservas</span><span>$10–$60</span></div>
         <div class="cost-row"><span>Apps de formularios / extras</span><span>$0–$20</span></div>
         <div class="cost-row"><span>Shopify Payments por venta</span><span>2.9% + 30¢</span></div>
-        <div class="cost-row"><span>Total fijo</span><span>≈ $40–$120/mes</span></div>
+        <div class="cost-row"><span>Cambios, diseño y soporte del negocio</span><span>Aparte</span></div>
+        <div class="cost-row"><span>Software</span><span>≈ $40–$120/mes</span></div>
       </div>
     </div>
-    <p class="note">Precios aproximados; confirmar en shopify.com/pricing y en la app de reservas elegida antes de presentar. Al sitio propio se le suma el dominio (≈ $15 al año), igual que a Shopify. Un tema a medida en Shopify tiene además un costo único de programación.</p>
+    <p class="note">Precios de Shopify aproximados; confirmar en shopify.com/pricing y en la app de reservas elegida. Con Shopify, el tiempo del dueño para hacer cambios o un programador por hora no está incluido, y un tema a medida tiene un costo único de programación. El dominio (≈ $15 al año) va aparte en ambos casos.</p>
   </section>
 
   <section>
@@ -134,7 +136,7 @@ code { background: var(--surface); border: 1px solid var(--line); border-radius:
       </div>
       <div class="box">
         <h3>Como el negocio vive de las reservas</h3>
-        <p>El sitio propio hace lo que el negocio necesita hoy, cuesta menos al mes y ya está listo. Lo que falta, como un editor de productos en /admin, se puede agregar.</p>
+        <p>El sitio propio ya hace lo que el negocio necesita, sigue con su Clover y la mensualidad incluye a una persona que hace cada cambio. Con Shopify el software cuesta menos, pero las reservas quedan cojas y los cambios corren por cuenta del dueño.</p>
       </div>
     </div>
   </section>

@@ -79,3 +79,10 @@ export {
   type TerminalSale,
 } from "./services/terminal.service";
 export type { RevenueSource, SourceTotals } from "./services/admin.service";
+export {
+  getTerminalSyncStatus,
+  isCloverConfigured,
+  syncTerminalSales,
+  type ProviderStatus,
+  type SyncProvider,
+} from "./services/terminal-sync.service";

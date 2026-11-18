@@ -73,7 +73,10 @@ precios en `backend/src/catalog.ts`, horario L–J 5–9:30 PM, V 5–10:30 PM, 
 - [x] Codigos de gift card y tickets (`giftCards`): se generan al pagar, se ven en `/order-confirmed` y se envian por correo (con Resend)
 - [x] Canje en el local desde `/admin` (dolares o tickets) y uso de gift cards al reservar en linea (descuenta del total; si cubre todo no pasa por Stripe)
 - [x] Panel: ingresos separados por origen (reservas en linea, tienda en linea, terminal Clover) y por ubicacion en las ventas de terminal
-- [ ] Clover: hoy se registra a mano en `/admin`; si cambian a Stripe Terminal se puede leer solo
+- [x] Sincronizacion automatica de terminales (`terminal-sync.service.ts`): Clover (API v3) y Stripe Terminal (cobros card_present),
+      cada noche por cron de Vercel (`/api/cron/terminal-sync`) o con "Sync now" en `/admin`. Sin duplicados (id = id del pago)
+- [ ] Conectar Clover: crear token de API en Clover (permiso de lectura de Payments) y poner `CLOVER_API_TOKEN`,
+      `CLOVER_MERCHANT_ID` y `CRON_SECRET` en Vercel. Mientras tanto, registro manual en `/admin`
 - [ ] Usar gift cards tambien para pagar en la tienda en linea
 
 ### Fase 4 – Contenido y extras

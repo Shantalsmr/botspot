@@ -7,6 +7,7 @@ import { listOpenRequests, type AdminRequest } from "./booking-request.service";
 import { listInquiries, type InquirySummary } from "./inquiry.service";
 import { listPaidOrders, type OrderSummary } from "./order.service";
 import { listTerminalSales, type TerminalSale } from "./terminal.service";
+import { getTerminalSyncStatus, type ProviderStatus } from "./terminal-sync.service";
 
 /**
  * Panel /admin para los duenos: una sola contrasena (ADMIN_PASSWORD) y una cookie firmada.
@@ -135,6 +136,8 @@ export interface AdminDashboard {
   orders: OrderSummary[];
   /** Ventas de la terminal (Clover) de este mes y los ultimos 30 dias. */
   terminalSales: TerminalSale[];
+  /** Estado de la conexion automatica con Clover / Stripe Terminal. */
+  terminalSync: ProviderStatus[];
 }
 
 function provoDate(ms: number): string {
@@ -231,5 +234,6 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
     inquiries: await listInquiries(50),
     orders: orders.slice(0, 30),
     terminalSales,
+    terminalSync: await getTerminalSyncStatus(),
   };
 }

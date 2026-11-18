@@ -217,8 +217,10 @@ export function TerminalSaleForm({ today }: { today: string }) {
 
   return (
     <form className="card admin-tool" onSubmit={submit}>
-      <h3>Add terminal sales (Clover)</h3>
-      <p className="muted small">Enter the day&apos;s total from the Clover report, or each sale.</p>
+      <h3>Add terminal sales by hand</h3>
+      <p className="muted small">
+        Only needed while Clover isn&apos;t connected. Enter the day&apos;s total from the Clover report, or each sale.
+      </p>
       <div className="form-row">
         <label className="field">
           <span>Day</span>
@@ -297,5 +299,69 @@ export function DeleteTerminalSale({ id }: { id: string }) {
         Cancel
       </button>
     </span>
+  );
+}
+
+interface ProviderStatus {
+  provider: "clover" | "stripe";
+  label: string;
+  configured: boolean;
+  lastSyncAt: number | null;
+  lastCount: number | null;
+  lastError: string | null;
+  setupHint: string | null;
+}
+
+/** Estado de la conexion automatica con las terminales y boton para sincronizar ahora. */
+export function TerminalSyncPanel({ providers }: { providers: ProviderStatus[] }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const anyConfigured = providers.some((p) => p.configured);
+
+  async function sync() {
+    setBusy(true);
+    setError(null);
+    const res = await post<ProviderStatus[]>("/api/admin/terminal", { action: "sync" });
+    if (!res.ok) setError(res.error.message);
+    router.refresh();
+    setBusy(false);
+  }
+
+  return (
+    <div className="card admin-tool">
+      <div className="sync-head">
+        <h3>Card terminals</h3>
+        <button type="button" className="btn btn-outline btn-small" onClick={sync} disabled={busy || !anyConfigured}>
+          {busy ? "Syncing…" : "Sync now"}
+        </button>
+      </div>
+      <p className="muted small">Connected terminals sync automatically every night. Sales show up under “Terminal”.</p>
+      <ul className="sync-list">
+        {providers.map((p) => (
+          <li key={p.provider}>
+            <span className={`status-dot${p.configured ? (p.lastError ? " is-error" : " is-on") : ""}`} aria-hidden="true" />
+            <span>
+              <strong>{p.label}</strong>{" "}
+              <span className="muted small">
+                {!p.configured
+                  ? "· Not connected"
+                  : p.lastError
+                    ? `· Last sync failed: ${p.lastError}`
+                    : p.lastSyncAt
+                      ? `· Last sync ${when(p.lastSyncAt)} · ${p.lastCount ?? 0} payments`
+                      : "· Connected, not synced yet"}
+              </span>
+              {p.setupHint ? <span className="muted small sync-hint">{p.setupHint}</span> : null}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {error ? (
+        <p className="form-error small" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
