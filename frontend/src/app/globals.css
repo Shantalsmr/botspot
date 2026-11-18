@@ -745,37 +745,105 @@ h2.display {
 
 .home {
   position: relative;
-  isolation: isolate;
 }
 
-.arena-canvas {
-  position: fixed;
+/* La pelea: seccion alta; la arena queda fija (sticky) mientras se baja. */
+.arena-story {
+  position: relative;
+  height: 560vh;
+  margin-top: -72px; /* la arena empieza detras del encabezado transparente */
+}
+
+.arena-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: #050506;
+}
+
+.arena-gl,
+.arena-fallback {
+  position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: -1;
   display: block;
+  object-fit: cover;
 }
 
-.hero-arena {
+/* Sombra para que el texto se lea sobre la arena */
+.arena-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.35) 38%, transparent 62%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.7) 0%, transparent 22%);
+}
+
+.arena-captions {
   position: relative;
-  min-height: calc(100svh - 72px);
-  display: flex;
+  height: 100%;
+  display: grid;
   align-items: center;
-  padding: 48px 0 96px;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.35) 55%, transparent 80%);
+  padding-top: 72px;
+  padding-bottom: 96px;
 }
 
-.hero-arena-copy {
-  width: 100%;
+.beat {
+  grid-area: 1 / 1;
+  max-width: 560px;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  pointer-events: none;
 }
 
-.hero-arena-copy > * {
-  max-width: 640px;
+.beat.is-active {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
 }
 
-.hero-arena .eyebrow {
+.beat .eyebrow {
   letter-spacing: 0.25em;
+}
+
+.beat h2.display {
+  font-size: clamp(3.2rem, 9vw, 6.5rem);
+  margin: 0.1em 0 0.15em;
+}
+
+.beat-text {
+  font-size: 1.2rem;
+  color: #e3e6ea;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+  margin: 0;
+}
+
+.beat-count {
+  font-size: clamp(5rem, 16vw, 10rem);
+  margin: 0;
+  color: var(--color-accent);
+  animation: beat-pulse 0.5s ease-out;
+}
+
+.beat-pop {
+  color: #4aa3ff;
+  animation: beat-pulse 0.5s ease-out;
+}
+
+@keyframes beat-pulse {
+  from {
+    transform: scale(1.35);
+    opacity: 0.2;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
 }
 
 .hero-lead {
@@ -784,38 +852,76 @@ h2.display {
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
 }
 
-.hero-checks {
+/* Marcador de la pelea (abajo) */
+.arena-rounds {
+  position: absolute;
+  left: 50%;
+  bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 22px;
+  gap: 6px;
+  margin: 0;
+  padding: 6px;
   list-style: none;
-  padding: 0;
-  margin: 1.4rem 0 0;
-  color: #d8dce2;
-  font-size: 0.95rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.hero-checks li::before {
-  content: "✓ ";
-  color: var(--color-accent);
-  font-weight: 800;
+.arena-rounds li {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
-.scroll-hint {
+.arena-rounds li.is-done {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.arena-rounds li.is-active {
+  background: var(--color-accent);
+  color: #000;
+}
+
+.scroll-cue {
+  position: absolute;
+  right: max(24px, env(safe-area-inset-right, 0px));
+  bottom: 84px;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  transition: opacity 0.4s ease;
+}
+
+.scroll-cue.is-hidden {
+  opacity: 0;
+}
+
+.scroll-cue span {
+  position: relative;
+  width: 24px;
+  height: 38px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  border-radius: 13px;
+}
+
+.scroll-cue span::after {
+  content: "";
   position: absolute;
   left: 50%;
-  bottom: 24px;
-  width: 26px;
-  height: 42px;
-  margin-left: -13px;
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  border-radius: 14px;
-}
-
-.scroll-hint span {
-  position: absolute;
-  left: 50%;
-  top: 8px;
+  top: 7px;
   width: 4px;
   height: 8px;
   margin-left: -2px;
@@ -835,16 +941,102 @@ h2.display {
   }
 }
 
-/* Secciones semitransparentes: la arena se ve detras */
-.glass {
-  background: rgba(0, 0, 0, 0.78);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+/* Mosaico de fotos reales */
+.mosaic-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: end;
+  justify-content: space-between;
+  margin-bottom: 24px;
 }
 
-.glass .card {
-  background: rgba(20, 20, 22, 0.85);
+.mosaic-head h2 {
+  margin: 0;
+}
+
+.home-mosaic {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-rows: repeat(2, minmax(180px, 260px));
+  gap: 12px;
+}
+
+.home-mosaic .photo {
+  position: relative;
+  min-height: 160px;
+}
+
+.home-mosaic .photo img {
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.home-mosaic .photo:hover img {
+  transform: scale(1.04);
+}
+
+.home-mosaic .mosaic-0 {
+  grid-row: span 2;
+}
+
+.split {
+  align-items: center;
+}
+
+@media (max-width: 800px) {
+  .home-mosaic {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: none;
+    grid-auto-rows: 170px;
+  }
+
+  .home-mosaic .mosaic-0 {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .arena-story {
+    height: 480vh;
+  }
+
+  .arena-shade {
+    background:
+      linear-gradient(180deg, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.45) 42%, transparent 62%),
+      linear-gradient(0deg, rgba(0, 0, 0, 0.7) 0%, transparent 20%);
+  }
+
+  .arena-captions {
+    align-items: start;
+    padding-top: 104px;
+  }
+
+  .arena-rounds li {
+    padding: 4px 8px;
+    font-size: 0.68rem;
+  }
+
+  .arena-rounds li:not(.is-active):not(:first-child):not(:last-child) {
+    display: none;
+  }
+
+  .scroll-cue {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beat {
+    transition: none;
+  }
+
+  .beat-count,
+  .beat-pop,
+  .scroll-cue span::after {
+    animation: none;
+  }
 }
 
 .step-number {
@@ -889,20 +1081,6 @@ h2.display {
   .reveal-ready .reveal.is-visible {
     opacity: 1;
     transform: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .scroll-hint span {
-    animation: none;
-  }
-}
-
-@media (max-width: 700px) {
-  .hero-arena {
-    align-items: flex-start;
-    padding-top: 32px;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.3) 60%, transparent 85%);
   }
 }
 
@@ -1809,5 +1987,80 @@ h2.display {
 @media (max-width: 1220px) {
   .account-link .nav-label {
     margin-left: 6px;
+  }
+}
+
+/* ---------- Pie de pagina ---------- */
+.site-footer {
+  padding-top: 56px;
+}
+
+.footer-top {
+  display: grid;
+  gap: 36px;
+  grid-template-columns: 1.3fr 0.8fr 1.2fr 1fr;
+}
+
+.footer-top p {
+  margin: 0 0 0.6em;
+}
+
+.footer-brand {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  justify-items: start;
+}
+
+.footer-brand p {
+  max-width: 34ch;
+}
+
+.footer-col {
+  min-width: 0;
+}
+
+.footer-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.footer-links a,
+.footer-col a {
+  color: var(--color-text);
+}
+
+.footer-links a:hover,
+.footer-col a:hover {
+  color: var(--color-accent);
+}
+
+.footer-follow {
+  margin-top: 20px !important;
+}
+
+.footer-social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.footer-bottom-links {
+  display: flex;
+  gap: 18px;
+}
+
+@media (max-width: 960px) {
+  .footer-top {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .footer-top {
+    grid-template-columns: 1fr;
   }
 }

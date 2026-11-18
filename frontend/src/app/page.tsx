@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArenaCanvas } from "@/components/ArenaCanvas";
+import { ArenaStory } from "@/components/arena/ArenaStory";
 import { RevealOnScroll } from "@/components/RevealOnScroll";
-import { activities, promotions, site } from "@/content/site";
+import { activities, photo, promotions, site } from "@/content/site";
 
 // Se regenera cada hora para que las promociones vencidas desaparezcan solas.
 export const revalidate = 3600;
@@ -10,8 +10,11 @@ export const revalidate = 3600;
 const steps = [
   { n: "01", title: "Pick your battle", text: "30 minutes, a full hour, or the whole venue for your group." },
   { n: "02", title: "Choose a time", text: "See open times instantly and pay securely online." },
-  { n: "03", title: "Take control", text: "Grab a controller, enter the arena and fight for the win." },
+  { n: "03", title: "Take control", text: "Grab a controller, enter the arena and pop your rival's balloon." },
 ];
+
+/** Las mejores fotos reales del local para el mosaico del inicio. */
+const mosaic = ["group-robots-1", "battle-kids", "arena-glow", "friends-robots", "family-robots"];
 
 /** Fecha de hoy en Provo (YYYY-MM-DD) para ocultar promociones vencidas. */
 function todayInProvo(): string {
@@ -21,44 +24,15 @@ function todayInProvo(): string {
 export default function HomePage() {
   const today = todayInProvo();
   const activePromos = promotions.filter((p) => p.expires >= today);
+  const party = photo("party-group");
+  const crowd = photo("arena-battle-crowd");
 
   return (
     <div className="home">
-      <ArenaCanvas />
       <RevealOnScroll />
+      <ArenaStory city={site.city} />
 
-      <section className="hero-arena">
-        <div className="container hero-arena-copy">
-          <p className="eyebrow">Robot combat arena · {site.city}</p>
-          <h1 className="display">
-            Take control.
-            <br />
-            <span className="accent">Battle robots.</span>
-          </h1>
-          <p className="hero-lead">
-            Drive a real fighting robot in our custom-built arenas. Challenge your friends, your family or your whole
-            crew. Book online in seconds.
-          </p>
-          <div className="actions">
-            <Link href="/book-appointment" className="btn btn-primary">
-              Book your battle
-            </Link>
-            <Link href="/parties" className="btn btn-outline">
-              Plan a party
-            </Link>
-          </div>
-          <ul className="hero-checks">
-            <li>Instant online booking</li>
-            <li>Up to 16 players at once</li>
-            <li>All ages</li>
-          </ul>
-        </div>
-        <a href="#how-it-works" className="scroll-hint" aria-label="Scroll down">
-          <span />
-        </a>
-      </section>
-
-      <section id="how-it-works" className="section glass">
+      <section id="how-it-works" className="section">
         <div className="container">
           <p className="eyebrow reveal">It&apos;s that easy</p>
           <h2 className="display reveal">Your arena in 3 steps</h2>
@@ -75,7 +49,7 @@ export default function HomePage() {
       </section>
 
       {activePromos.length > 0 ? (
-        <section className="section glass">
+        <section className="section section-alt">
           <div className="container">
             <p className="eyebrow reveal">This week only</p>
             <h2 className="display reveal">Promotions</h2>
@@ -92,16 +66,39 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      <section className="section glass">
-        <div className="container grid grid-2">
+      <section className="section section-alt">
+        <div className="container">
+          <div className="mosaic-head">
+            <div>
+              <p className="eyebrow reveal">Real battles. Real people.</p>
+              <h2 className="display reveal">This is The Bot Spot</h2>
+            </div>
+            <Link href="/gallery" className="btn btn-outline reveal">
+              See the gallery
+            </Link>
+          </div>
+          <div className="home-mosaic">
+            {mosaic.map((name, i) => {
+              const p = photo(name);
+              return (
+                <div key={name} className={`photo reveal mosaic-${i}`}>
+                  <Image
+                    src={p.src}
+                    alt={p.alt}
+                    fill
+                    sizes={i === 0 ? "(max-width: 800px) 100vw, 580px" : "(max-width: 800px) 50vw, 290px"}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container grid grid-2 split">
           <div className="photo reveal">
-            <Image
-              src="/images/arena-crowd.jpg"
-              alt="A crowd watching a robot battle in the arena"
-              width={1600}
-              height={1200}
-              sizes="(max-width: 900px) 100vw, 560px"
-            />
+            <Image src={party.src} alt={party.alt} width={party.width} height={party.height} sizes="(max-width: 900px) 100vw, 560px" />
           </div>
           <div className="reveal">
             <p className="eyebrow">Parties & events</p>
@@ -111,7 +108,7 @@ export default function HomePage() {
               you with a private event.
             </p>
             <div className="actions">
-              <Link href="/parties" className="btn btn-outline">
+              <Link href="/parties" className="btn btn-primary">
                 See parties & events
               </Link>
             </div>
@@ -119,14 +116,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="section glass">
-        <div className="container grid grid-2">
+      <section className="section section-alt">
+        <div className="container grid grid-2 split">
           <div className="reveal">
             <p className="eyebrow">Fun designed for</p>
             <h2 className="display">Friends. Families. Couples.</h2>
-            <p className="muted">
-              Two custom-built arenas, real weaponized robots and non-stop action for every age.
-            </p>
+            <p className="muted">Two custom-built arenas, real battle robots and non-stop action for every age.</p>
             <div className="actions">
               <Link href="/book-appointment" className="btn btn-primary">
                 Book now
@@ -137,18 +132,12 @@ export default function HomePage() {
             </div>
           </div>
           <div className="photo reveal">
-            <Image
-              src="/images/arena.jpg"
-              alt="The Bot Spot robot battle arena"
-              width={1600}
-              height={900}
-              sizes="(max-width: 900px) 100vw, 560px"
-            />
+            <Image src={crowd.src} alt={crowd.alt} width={crowd.width} height={crowd.height} sizes="(max-width: 900px) 100vw, 560px" />
           </div>
         </div>
       </section>
 
-      <section className="section glass">
+      <section className="section">
         <div className="container">
           <p className="eyebrow reveal">What you can do</p>
           <h2 className="display reveal">Explore all the fun</h2>
