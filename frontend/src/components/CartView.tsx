@@ -153,7 +153,7 @@ export function CheckoutView() {
       </div>
       <ul className="checkout-notes small muted">
         {hasEmail ? <li>🎁 Gift cards and tickets come as a code, shown after payment and sent to your email.</li> : null}
-        {hasPickup ? <li>📍 Merch and party items are ready for pickup at the front desk.</li> : null}
+        {hasPickup ? <li>📍 Merch is ready for pickup at the front desk.</li> : null}
         <li>🔒 Secure payment by Stripe. We never see your card number.</li>
       </ul>
       <label className="field">

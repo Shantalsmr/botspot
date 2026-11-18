@@ -65,7 +65,7 @@ precios en `backend/src/catalog.ts`, horario L–J 5–9:30 PM, V 5–10:30 PM, 
 - [ ] Aviso por correo de cada mensaje (cuando Resend este configurado)
 
 ### ✅ Fase 3 – Tienda y carrito (nov. 2026)
-- [x] Catalogo en `backend/src/shop.ts` con los precios del menu del local (tickets 2/4/10/16, piñatas, Donut Surprise, camiseta $29) + gift cards $25/$50/$100 (montos por confirmar)
+- [x] Catalogo en `backend/src/shop.ts` con los precios del menu del local (tickets 2/4/10/16, camiseta $29; sin comida ni dulces) + gift cards $25/$50/$100 (montos por confirmar)
 - [x] Carrito en el navegador (`/cart`), resumen y pago con Stripe (`/checkout` → `/order-confirmed`), coleccion `orders`
 - [x] Pedidos y ventas de la tienda en `/admin`; el mismo webhook de Stripe confirma pedidos y reservas
 - [ ] Fotos reales de los productos (`public/images/shop/`)

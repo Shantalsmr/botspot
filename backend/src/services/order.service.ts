@@ -169,7 +169,7 @@ export async function createOrderCheckout(
         metadata: { orderId: ref.id },
       },
       ...(hasPickup
-        ? { custom_text: { submit: { message: "Merch and party items are picked up at the front desk." } } }
+        ? { custom_text: { submit: { message: "Merch is picked up at the front desk." } } }
         : {}),
       expires_at: Math.floor(now / 1000) + 30 * 60,
       success_url: `${origin}/order-confirmed?session_id={CHECKOUT_SESSION_ID}`,

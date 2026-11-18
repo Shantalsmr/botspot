@@ -5,11 +5,12 @@
  * El precio que se cobra SIEMPRE se calcula en el servidor con este archivo; el carrito del
  * navegador solo manda ids, variante y cantidad.
  *
+ * Sin comida: el negocio ya no vende comida ni dulces (nov. 2026).
  * Precios tomados del menu del local (foto de Google, nov. 2026). Las gift cards son nuevas: confirmar
  * montos con el negocio. Para agregar un producto basta con sumarlo a PRODUCTS.
  */
 
-export type ProductCategory = "gift-cards" | "tickets" | "party" | "merch";
+export type ProductCategory = "gift-cards" | "tickets" | "merch";
 
 /**
  * Lo que genera un producto al pagarse: un codigo con saldo en dolares (gift card) o con tickets
@@ -42,7 +43,6 @@ export interface Product {
 export const CATEGORIES: { id: ProductCategory; label: string }[] = [
   { id: "gift-cards", label: "Gift cards" },
   { id: "tickets", label: "Game tickets" },
-  { id: "party", label: "Party extras" },
   { id: "merch", label: "Merch" },
 ];
 
@@ -128,34 +128,6 @@ export const PRODUCTS: readonly Product[] = [
     fulfillment: "email",
     credit: { kind: "tickets", count: 16 },
     badge: "Best value",
-  },
-  {
-    id: "pinata-small",
-    name: "Small Piñata + Candy",
-    category: "party",
-    priceCents: 1500,
-    description: "A robot-battle piñata filled with candy. Smash it in the arena! Ready on your party day.",
-    icon: "🪅",
-    fulfillment: "pickup",
-  },
-  {
-    id: "pinata-big",
-    name: "Big Piñata + Candy",
-    category: "party",
-    priceCents: 2500,
-    description: "The big one, packed with candy for the whole party. Ready on your party day.",
-    icon: "🪅",
-    fulfillment: "pickup",
-    badge: "Party favorite",
-  },
-  {
-    id: "donut-surprise",
-    name: "Donut Surprise",
-    category: "party",
-    priceCents: 1200,
-    description: "A surprise robot game with a sweet donut prize. Ask the team to set it up at your visit.",
-    icon: "🍩",
-    fulfillment: "pickup",
   },
   {
     id: "tee",
