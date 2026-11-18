@@ -52,7 +52,7 @@ precios en `backend/src/catalog.ts`, horario L–J 5–9:30 PM, V 5–10:30 PM, 
 - [x] Paleta negro / naranja / blanco; títulos en Barlow Condensed
 - [x] Sin precios en el inicio; sección de promociones semanales lista (`promotions` en `site.ts`, se oculta si está vacía)
 - [x] Comida eliminada del sitio; un solo teléfono publicado + "We speak English & Spanish"
-- [ ] Confirmar el naranja exacto de la marca (hoy `#ff7a00` en `globals.css`)
+- [ ] Confirmar el naranja exacto de la marca (hoy `#ff7a1a`, `--color-action` en `globals.css`)
 - [ ] Videos de clientes jugando (loop) y reviews de Google en el inicio — faltan los archivos
 - [ ] Logo y colores oficiales en archivo
 
@@ -82,7 +82,9 @@ precios en `backend/src/catalog.ts`, horario L–J 5–9:30 PM, V 5–10:30 PM, 
 ### Fase 4 – Contenido y extras
 - [x] Dirección y mapa en `/location`: arena en 255 N University Ave, Provo; clases STEAM en 1201 N 800 E, Orem
 - [x] Fotos reales en galeria, Parties, STEAM y tienda (`frontend/public/images/gallery`, lista en `site.ts`) — confirmar permiso de uso
-- [ ] Videos de la galería
+- [x] Inicio: arena en canvas 2D con perspectiva (`components/arena`, el formato original con reflectores y franjas) con robots cuadrados estilo Bot Spot (gafas, bigote, barras LED, pinzas, globo) y pelea guiada por el scroll. La arena queda fija detrás de todo el inicio y la cámara viaja con el scroll (amplia → al ras del piso → desde arriba al final); las secciones son tarjetas de vidrio. Fotos de acción mientras llegan los videos
+- [x] Paleta: carbono + cian del logo (identidad) + naranja (solo acciones) + madera del local (fondos); ver el encabezado de `globals.css`
+- [ ] Videos originales en loop: pedir los .mp4 a los dueños, ponerlos en `frontend/public/videos` y en `loopVideos` (`site.ts`)
 - [x] Página `/tournaments`: transmisión en vivo de YouTube y torneos pasados; lista de próximos torneos en `site.ts`
 - [ ] Poner el canal de YouTube en `site.youtube` (`channelId` que empieza con UC y `url`). No se encontró públicamente
 - [ ] Conectar el dominio `thebotspot.org` en Vercel

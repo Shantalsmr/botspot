@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { PageHeader } from "@/components/PageHeader";
-import { gallery } from "@/content/site";
+import { LoopVideos } from "@/components/Videos";
+import { gallery, loopVideos } from "@/content/site";
 
 export const metadata: Metadata = {
   title: "Gallery",
@@ -16,6 +17,17 @@ export default function GalleryPage() {
         entertainment. From birthday parties to family outings, every moment is packed with laughter,
         competition, and unforgettable memories.
       </PageHeader>
+
+      {/* Videos originales en loop (cuando los duenos pasen los .mp4). */}
+      {loopVideos.length > 0 ? (
+        <section className="section">
+          <div className="container">
+            <p className="eyebrow">Videos</p>
+            <h2 className="display">Battles in action</h2>
+            <LoopVideos videos={loopVideos} />
+          </div>
+        </section>
+      ) : null}
 
       <section className="section">
         <div className="container masonry">

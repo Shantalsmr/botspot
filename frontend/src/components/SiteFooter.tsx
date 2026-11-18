@@ -13,7 +13,7 @@ export function SiteFooter() {
       <div className="container footer-top">
         <div className="footer-brand">
           <Link href="/" className="brand">
-            <Image src="/images/logo-square.jpg" alt="" width={44} height={44} />
+            <Image src="/images/logo-square.jpg" alt="" width={72} height={72} />
             <span>
               <strong>{site.name}</strong>
               <small>{site.tagline}</small>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow_Condensed } from "next/font/google";
+import { Chakra_Petch } from "next/font/google";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
 import { CartProvider } from "@/components/Cart";
@@ -15,12 +15,12 @@ const figtree = localFont({
   display: "swap",
 });
 
-// Tipografia de titulos: condensada, estilo deportivo/arena.
-const display = Barlow_Condensed({
+// Tipografia de titulos: Chakra Petch (esquinas cortadas como las letras del logo, tecnica pero legible).
+// El texto normal va en Figtree.
+const display = Chakra_Petch({
   subsets: ["latin"],
-  weight: ["700", "800"],
-  style: ["italic"],
-  variable: "--font-barlow",
+  weight: ["500", "600", "700"],
+  variable: "--font-chakra",
   display: "swap",
 });
 
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#0a0c0f",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

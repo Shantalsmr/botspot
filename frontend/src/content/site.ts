@@ -41,7 +41,46 @@ export const site = {
   ],
 } as const;
 
-// "Home" no va en el menu: el logo ya lleva al inicio.
+export interface NavItem {
+  href: string;
+  label: string;
+  /** Texto corto que se ve en el menu desplegable. */
+  hint?: string;
+}
+
+export interface NavGroup {
+  label: string;
+  href?: string;
+  items?: NavItem[];
+}
+
+/**
+ * Menu principal: maximo 4 opciones; el resto va en desplegables.
+ * "Home" no va en el menu: el logo ya lleva al inicio.
+ */
+export const navMenu: NavGroup[] = [
+  {
+    label: "Experiences",
+    items: [
+      { href: "/parties", label: "Parties", hint: "Birthdays & group fun" },
+      { href: "/events", label: "Events", hint: "Corporate & mobile arenas" },
+      { href: "/tournaments", label: "Tournaments", hint: "Watch & compete" },
+      { href: "/steam", label: "STEAM", hint: "Build your own robot" },
+    ],
+  },
+  { label: "Shop", href: "/shop" },
+  { label: "Gallery", href: "/gallery" },
+  {
+    label: "Visit",
+    items: [
+      { href: "/location", label: "Location", hint: "Provo arena & Orem classes" },
+      { href: "/faq", label: "FAQ", hint: "Ages, parking, tickets" },
+      { href: "/contact", label: "Contact", hint: "Call, email or message us" },
+    ],
+  },
+];
+
+/** Todas las paginas en una lista plana (pie de pagina). */
 export const navLinks = [
   { href: "/parties", label: "Parties" },
   { href: "/events", label: "Events" },
@@ -216,3 +255,18 @@ export interface Tournament {
 
 /** Proximos torneos (los agrega el negocio). Vacio = la seccion dice que pronto se anuncian. */
 export const tournaments: Tournament[] = [];
+
+export interface LoopVideo {
+  /** Archivo en /public/videos (mp4, idealmente menos de 8 MB y sin audio). */
+  src: string;
+  /** Imagen que se ve mientras carga (opcional). */
+  poster?: string;
+  title: string;
+}
+
+/**
+ * Videos originales del negocio (archivos .mp4 en frontend/public/videos). Se reproducen solos, en
+ * loop y sin sonido. Cuando esta lista tiene videos, aparecen en el inicio (en vez de las fotos de accion) y en la galeria.
+ * PENDIENTE: que los duenos pasen los archivos originales de sus reels.
+ */
+export const loopVideos: LoopVideo[] = [];

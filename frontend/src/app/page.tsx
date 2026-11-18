@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArenaStory } from "@/components/arena/ArenaStory";
+import { ArenaBackdrop } from "@/components/arena/ArenaBackdrop";
 import { RevealOnScroll } from "@/components/RevealOnScroll";
-import { activities, photo, promotions, site } from "@/content/site";
+import { LoopVideos } from "@/components/Videos";
+import { activities, loopVideos, photo, promotions, site } from "@/content/site";
 
 // Se regenera cada hora para que las promociones vencidas desaparezcan solas.
 export const revalidate = 3600;
@@ -12,6 +13,9 @@ const steps = [
   { n: "02", title: "Choose a time", text: "See open times instantly and pay securely online." },
   { n: "03", title: "Take control", text: "Grab a controller, enter the arena and pop your rival's balloon." },
 ];
+
+/** Fotos de accion (mientras llegan los videos originales en loop). */
+const action = ["arena-red-lights", "kids-driving", "arena-action", "kids-robots"];
 
 /** Las mejores fotos reales del local para el mosaico del inicio. */
 const mosaic = ["group-robots-1", "battle-kids", "arena-glow", "friends-robots", "family-robots"];
@@ -30,7 +34,37 @@ export default function HomePage() {
   return (
     <div className="home">
       <RevealOnScroll />
-      <ArenaStory city={site.city} />
+      {/* La arena queda fija detras de todo el inicio; la pelea y la camara avanzan con el scroll. */}
+      <ArenaBackdrop />
+
+      <section className="home-hero">
+        <div className="container">
+          <div className="home-hero-copy">
+            <p className="eyebrow">Robot combat arena · {site.city}</p>
+            <h1 className="display">
+              Take control.
+              <br />
+              <span className="accent">Battle robots.</span>
+            </h1>
+            <p className="hero-lead">
+              Drive a real fighting robot in our custom-built arenas. Pop your rival&apos;s balloon to win. Scroll down
+              and watch the battle.
+            </p>
+            <div className="actions">
+              <Link href="/book-appointment" className="btn btn-primary">
+                Book your battle
+              </Link>
+              <Link href="/parties" className="btn btn-outline">
+                Plan a party
+              </Link>
+            </div>
+          </div>
+        </div>
+        <div className="scroll-cue" aria-hidden="true">
+          <span />
+          Scroll to fight
+        </div>
+      </section>
 
       <section id="how-it-works" className="section">
         <div className="container">
@@ -49,7 +83,7 @@ export default function HomePage() {
       </section>
 
       {activePromos.length > 0 ? (
-        <section className="section section-alt">
+        <section className="section">
           <div className="container">
             <p className="eyebrow reveal">This week only</p>
             <h2 className="display reveal">Promotions</h2>
@@ -66,7 +100,7 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      <section className="section section-alt">
+      <section className="section">
         <div className="container">
           <div className="mosaic-head">
             <div>
@@ -96,6 +130,35 @@ export default function HomePage() {
       </section>
 
       <section className="section">
+        <div className="container">
+          <div className="mosaic-head">
+            <div>
+              <p className="eyebrow reveal">Watch the action</p>
+              <h2 className="display reveal">Straight from the arena</h2>
+            </div>
+            <a className="btn btn-outline reveal" href={site.social.instagram} target="_blank" rel="noopener noreferrer">
+              More on Instagram
+            </a>
+          </div>
+          {/* Videos propios en loop cuando lleguen; mientras, fotos de accion. */}
+          {loopVideos.length > 0 ? (
+            <LoopVideos videos={loopVideos.slice(0, 3)} />
+          ) : (
+            <div className="photo-strip action-strip">
+              {action.map((name) => {
+                const p = photo(name);
+                return (
+                  <div key={name} className="photo reveal">
+                    <Image src={p.src} alt={p.alt} width={p.width} height={p.height} sizes="(max-width: 700px) 50vw, 280px" />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="section">
         <div className="container grid grid-2 split">
           <div className="photo reveal">
             <Image src={party.src} alt={party.alt} width={party.width} height={party.height} sizes="(max-width: 900px) 100vw, 560px" />
@@ -116,7 +179,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="section section-alt">
+      <section className="section">
         <div className="container grid grid-2 split">
           <div className="reveal">
             <p className="eyebrow">Fun designed for</p>
@@ -151,6 +214,24 @@ export default function HomePage() {
                 <p className="muted">{activity.description}</p>
               </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="home-final">
+        <div className="container">
+          <h2 className="display">
+            Your arena is
+            <br />
+            <span className="accent">waiting this week.</span>
+          </h2>
+          <div className="actions">
+            <Link href="/book-appointment" className="btn btn-primary">
+              See open times
+            </Link>
+            <Link href="/parties" className="btn btn-outline">
+              Plan a party
+            </Link>
           </div>
         </div>
       </section>

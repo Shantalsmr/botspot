@@ -1,17 +1,16 @@
-import * as THREE from "three";
-import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-
 /**
- * Arena 3D del inicio (three.js). La pelea esta guionizada y avanza con el scroll:
- * `setProgress(0..1)` decide donde esta cada robot, la camara, el semaforo y si el globo ya revento.
- * Subir el scroll la regresa. Los robots imitan a los de The Bot Spot: base redonda de color con
- * dos ruedas, torso gris con panel de hexagonos o LEDs, cabeza redonda con ojos tipo gafas, dos
- * brazos y un globo atado arriba (gana quien revienta el globo del otro).
+ * Arena del inicio dibujada en canvas 2D con proyeccion 3D propia (sin librerias): cielo con
+ * estrellas, reflectores que barren el piso, franjas de peligro naranja/negro y paredes de vidrio.
  *
- * Linea de tiempo (progreso):
- *   0.00 preparados · 0.14 semaforo rojo → amarillo → verde (0.27) · 0.42 primer choque
- *   0.58 segundo choque · 0.70 el naranja revienta el globo azul · 0.78+ celebracion del ganador
+ * Los robots imitan a los de The Bot Spot: base ancha con visera negra y ruedas, torso con tres
+ * barras LED, pinzas negras, cabeza cuadrada (gafas y bigote / visor) y un globo arriba.
+ *
+ * La pelea esta guionizada y avanza con el scroll (`setProgress(0..1)`); subir la regresa:
+ *   0.00 preparados · 0.14 circulo rojo → amarillo → verde (0.27) · 0.42 primer choque
+ *   0.58 segundo choque · 0.70 el naranja revienta el globo del cian · 0.78+ celebracion
+ * La arena queda fija detras de todo el inicio y la camara viaja con el scroll de la pagina:
+ * vista amplia en la portada → baja al ras del piso entre los robots durante la pelea →
+ * sube a una vista desde arriba con el ganador en el centro al final de la pagina.
  */
 
 export const TIMELINE = {
@@ -40,689 +39,204 @@ interface Options {
   offsetDown: () => number;
 }
 
-const ARENA = 4; // medio lado del piso de la arena (metros "de escena")
-const WALL_H = 1.25;
-const BASE_R = 0.55;
-const BALLOON_Y = 1.18;
+type Vec3 = [number, number, number];
+
+const ARENA = 5; // medio lado del piso
+const WALL_H = 1.3;
+const BOT = 1.4; // escala de los robots
+const ORANGE = "255, 122, 26";
+const CYAN = "47, 214, 242";
 
 // ---------- utilidades ----------
+const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a: Vec3, b: Vec3): Vec3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const norm = (a: Vec3): Vec3 => {
+  const l = Math.hypot(a[0], a[1], a[2]) || 1;
+  return [a[0] / l, a[1] / l, a[2] / l];
+};
 const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
 const smooth = (t: number) => t * t * (3 - 2 * t);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-/** Progreso local de p dentro de [a, b], suavizado. */
 const seg = (p: number, a: number, b: number) => smooth(clamp((p - a) / (b - a)));
 const angleLerp = (a: number, b: number, t: number) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * t;
+const rand = (lo: number, hi: number) => lo + Math.random() * (hi - lo);
 
-/** Generador pseudoaleatorio con semilla (las pelotas quedan siempre en el mismo lugar). */
-function seeded(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 16807) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
+function rotateY(p: Vec3, a: number): Vec3 {
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  return [p[0] * c + p[2] * s, p[1], -p[0] * s + p[2] * c];
 }
 
-function canvasTexture(w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void): THREE.CanvasTexture {
-  const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
-  draw(c.getContext("2d")!);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
-  return t;
+function hexToRgb(hex: string): string {
+  const h = hex.replace("#", "");
+  const n = parseInt(h.length === 3 ? h.replace(/(.)/g, "$1$1") : h, 16);
+  return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
 }
 
-/** Panel de hexagonos del pecho (como el de los robots reales). */
-function hexTexture(color: string): THREE.CanvasTexture {
-  return canvasTexture(256, 256, (ctx) => {
-    ctx.fillStyle = "#2a2d31";
-    ctx.fillRect(0, 0, 256, 256);
-    const r = 22;
-    const w = Math.sqrt(3) * r;
-    ctx.fillStyle = color;
-    for (let row = -1; row < 9; row++) {
-      for (let col = -1; col < 8; col++) {
-        const x = col * w + (row % 2 ? w / 2 : 0);
-        const y = row * r * 1.5;
-        ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-          const a = (Math.PI / 3) * i + Math.PI / 6;
-          ctx.lineTo(x + Math.cos(a) * (r - 4), y + Math.sin(a) * (r - 4));
-        }
-        ctx.closePath();
-        ctx.fill();
-      }
-    }
-  });
-}
-
-/** Panel de barras LED (robot azul). */
-function ledTexture(): THREE.CanvasTexture {
-  return canvasTexture(256, 256, (ctx) => {
-    ctx.fillStyle = "#0b1426";
-    ctx.fillRect(0, 0, 256, 256);
-    ctx.shadowColor = "#7fb6ff";
-    ctx.shadowBlur = 18;
-    ctx.fillStyle = "#cfe3ff";
-    for (let i = 0; i < 3; i++) {
-      for (let j = 0; j < 3; j++) ctx.fillRect(34 + j * 66, 46 + i * 62, 54, 30);
-    }
-  });
-}
-
-// ---------- robot ----------
+// ---------- robots ----------
 interface RobotStyle {
-  base: string;
-  torso: string;
+  body: string;
+  bodyDark: string;
   head: string;
+  led: string;
   balloon: string;
-  chest: "hex" | "led";
-  chestColor: string;
+  face: "mustache" | "visor";
 }
 
-class Robot {
-  readonly group = new THREE.Group();
-  private body = new THREE.Group();
-  private armL = new THREE.Group();
-  private armR = new THREE.Group();
-  private wheelL: THREE.Mesh;
-  private wheelR: THREE.Mesh;
-  readonly balloon = new THREE.Group();
-  private string: THREE.Line;
-  private chestMat: THREE.MeshStandardMaterial;
-  x = 0;
-  z = 0;
-  heading = 0;
-  private wheelSpin = 0;
+const ORANGE_BOT: RobotStyle = {
+  body: "#ff7a1a",
+  bodyDark: "#b84a0a",
+  head: "#e0262c",
+  led: "#ffe2a3",
+  balloon: "#ffc61a",
+  face: "mustache",
+};
 
-  constructor(style: RobotStyle) {
-    const plastic = (color: string, rough = 0.45) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: 0.05 });
-    const dark = new THREE.MeshStandardMaterial({ color: "#151618", roughness: 0.7 });
-    const metal = new THREE.MeshStandardMaterial({ color: "#b9bec6", roughness: 0.3, metalness: 0.85 });
+const CYAN_BOT: RobotStyle = {
+  body: "#22bcd9",
+  bodyDark: "#0d6f85",
+  head: "#dde4ea",
+  led: "#c4f8ff",
+  balloon: "#ff3b6b",
+  face: "visor",
+};
 
-    // Base redonda: aro de color + cubierta gris clara
-    const ring = new THREE.Mesh(new THREE.CylinderGeometry(BASE_R, BASE_R * 1.02, 0.13, 48), plastic(style.base, 0.4));
-    ring.position.y = 0.11;
-    ring.scale.z = 1.08;
-    const deck = new THREE.Mesh(new THREE.CylinderGeometry(BASE_R * 0.86, BASE_R * 0.86, 0.03, 48), plastic("#c9ccd1", 0.6));
-    deck.position.y = 0.185;
-    deck.scale.z = 1.08;
-    // Ruedas
-    const wheelGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.09, 24);
-    wheelGeo.rotateZ(Math.PI / 2);
-    this.wheelL = new THREE.Mesh(wheelGeo, dark);
-    this.wheelR = new THREE.Mesh(wheelGeo, dark);
-    this.wheelL.position.set(-BASE_R * 0.98, 0.16, 0);
-    this.wheelR.position.set(BASE_R * 0.98, 0.16, 0);
-    for (const w of [this.wheelL, this.wheelR]) {
-      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.1, 12).rotateZ(Math.PI / 2), metal);
-      w.add(hub);
-    }
-
-    // Torso con panel en el pecho
-    const torso = new THREE.Mesh(new RoundedBoxGeometry(0.44, 0.36, 0.34, 4, 0.06), plastic(style.torso, 0.5));
-    torso.position.y = 0.39;
-    this.chestMat = new THREE.MeshStandardMaterial({
-      map: style.chest === "hex" ? hexTexture(style.chestColor) : ledTexture(),
-      emissive: style.chest === "led" ? new THREE.Color("#5c8dff") : new THREE.Color("#000"),
-      emissiveIntensity: style.chest === "led" ? 1.4 : 0,
-      emissiveMap: style.chest === "led" ? ledTexture() : null,
-      roughness: 0.5,
-    });
-    const chest = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.24), this.chestMat);
-    chest.position.set(0, 0.39, 0.172);
-    // Cuello y cabeza redonda
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.06, 16), dark);
-    neck.position.y = 0.6;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 32, 24), plastic(style.head, 0.35));
-    head.position.y = 0.76;
-    // Ojos tipo gafas
-    for (const sx of [-1, 1]) {
-      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.058, 0.07, 20).rotateX(Math.PI / 2), plastic("#a6abb3", 0.4));
-      rim.position.set(sx * 0.075, 0.79, 0.17);
-      const lens = new THREE.Mesh(
-        new THREE.CircleGeometry(0.038, 20),
-        new THREE.MeshStandardMaterial({ color: "#0d0f12", roughness: 0.15, metalness: 0.3 }),
-      );
-      lens.position.set(sx * 0.075, 0.79, 0.206);
-      // Orejas / tornillos a los lados de la cabeza
-      const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.09, 12), plastic("#8e939b", 0.4));
-      ear.rotation.z = sx * -0.9;
-      ear.position.set(sx * 0.19, 0.86, 0);
-      this.body.add(rim, lens, ear);
-    }
-    // Brazos: varilla negra con martillo gris y una punta para reventar globos
-    for (const [arm, sx] of [
-      [this.armL, -1],
-      [this.armR, 1],
-    ] as const) {
-      arm.position.set(sx * 0.25, 0.48, 0);
-      const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 10), plastic("#8e939b"));
-      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.5, 8), dark);
-      rod.position.y = 0.25;
-      const hammer = new THREE.Mesh(new RoundedBoxGeometry(0.12, 0.08, 0.08, 2, 0.02), plastic("#9aa0a8"));
-      hammer.position.y = 0.52;
-      const pin = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.09, 6), metal);
-      pin.position.set(0, 0.52, 0.08);
-      pin.rotation.x = Math.PI / 2;
-      arm.add(shoulder, rod, hammer, pin);
-      arm.rotation.z = sx * -0.35;
-    }
-
-    // Globo con su hilo
-    const balloonMesh = new THREE.Mesh(
-      new THREE.SphereGeometry(0.2, 32, 24),
-      new THREE.MeshPhysicalMaterial({
-        color: style.balloon,
-        roughness: 0.18,
-        clearcoat: 1,
-        clearcoatRoughness: 0.1,
-        sheen: 0.4,
-        transparent: true,
-        opacity: 0.92,
-      }),
-    );
-    balloonMesh.scale.set(1, 1.18, 1);
-    const knot = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.05, 8), balloonMesh.material);
-    knot.position.y = -0.25;
-    knot.rotation.x = Math.PI;
-    this.balloon.add(balloonMesh, knot);
-    this.balloon.position.y = BALLOON_Y;
-    const stringGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.95, 0), new THREE.Vector3(0, BALLOON_Y - 0.27, 0)]);
-    this.string = new THREE.Line(stringGeo, new THREE.LineBasicMaterial({ color: "#e8e8e8", transparent: true, opacity: 0.7 }));
-
-    this.body.add(torso, chest, neck, head, this.armL, this.armR);
-    this.group.add(ring, deck, this.wheelL, this.wheelR, this.body, this.balloon, this.string);
-    this.group.traverse((o) => {
-      if (o instanceof THREE.Mesh) {
-        o.castShadow = true;
-        o.receiveShadow = true;
-      }
-    });
-  }
-
-  /** Coloca el robot. `swing` 0..1 sube los brazos (ataque); `tilt` inclina el cuerpo. */
-  pose(x: number, z: number, heading: number, swing: number, tilt: number, bob: number) {
-    const dist = Math.hypot(x - this.x, z - this.z);
-    this.wheelSpin += dist / 0.16;
-    this.x = x;
-    this.z = z;
-    this.heading = heading;
-    this.group.position.set(x, 0, z);
-    this.group.rotation.y = heading;
-    this.wheelL.rotation.x = this.wheelSpin;
-    this.wheelR.rotation.x = this.wheelSpin;
-    this.body.position.y = bob;
-    this.body.rotation.x = tilt;
-    this.armL.rotation.x = -0.2 - swing * 1.4;
-    this.armR.rotation.x = -0.2 - swing * 1.1;
-  }
-
-  setBalloon(visible: boolean, sway: number) {
-    this.balloon.visible = visible;
-    this.string.visible = visible;
-    this.balloon.rotation.z = sway;
-    this.balloon.position.x = Math.sin(sway) * 0.12;
-  }
-
-  /** Punto del globo en coordenadas del mundo. */
-  balloonWorld(): THREE.Vector3 {
-    return new THREE.Vector3(this.x, BALLOON_Y, this.z);
-  }
-
-  setVictory(amount: number) {
-    this.armL.rotation.x = lerp(this.armL.rotation.x, -2.6, amount);
-    this.armR.rotation.x = lerp(this.armR.rotation.x, -2.6, amount);
-  }
-}
-
-// ---------- particulas ----------
-let dotTex: THREE.CanvasTexture | null = null;
-/** Punto redondo con brillo (las particulas no se ven como cuadritos). */
-function dotTexture(): THREE.CanvasTexture {
-  dotTex ??= canvasTexture(64, 64, (ctx) => {
-    const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    g.addColorStop(0, "rgba(255,255,255,1)");
-    g.addColorStop(0.35, "rgba(255,255,255,0.85)");
-    g.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 64, 64);
-  });
-  return dotTex;
-}
-class Particles {
-  readonly points: THREE.Points;
-  private pos: Float32Array;
-  private col: Float32Array;
-  private vel: Float32Array;
-  private life: Float32Array;
-  private max: Float32Array;
-  private next = 0;
-
-  constructor(
-    private count: number,
-    size: number,
-    private gravity: number,
-    private drag: number,
-  ) {
-    this.pos = new Float32Array(count * 3);
-    this.col = new Float32Array(count * 3);
-    this.vel = new Float32Array(count * 3);
-    this.life = new Float32Array(count).fill(1);
-    this.max = new Float32Array(count).fill(1);
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(this.pos, 3));
-    geo.setAttribute("color", new THREE.BufferAttribute(this.col, 3));
-    this.points = new THREE.Points(
-      geo,
-      new THREE.PointsMaterial({
-        size,
-        map: dotTexture(),
-        alphaTest: 0.01,
-        vertexColors: true,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        sizeAttenuation: true,
-      }),
-    );
-    this.points.frustumCulled = false;
-    for (let i = 0; i < count; i++) this.pos[i * 3 + 1] = -100;
-  }
-
-  emit(at: THREE.Vector3, n: number, colors: THREE.Color[], speed: number, up: number, ttl: number) {
-    for (let k = 0; k < n; k++) {
-      const i = this.next;
-      this.next = (this.next + 1) % this.count;
-      const a = Math.random() * Math.PI * 2;
-      const s = speed * (0.4 + Math.random() * 0.8);
-      this.pos.set([at.x, at.y, at.z], i * 3);
-      this.vel.set([Math.cos(a) * s, up * (0.5 + Math.random()), Math.sin(a) * s], i * 3);
-      const c = colors[Math.floor(Math.random() * colors.length)]!;
-      this.col.set([c.r, c.g, c.b], i * 3);
-      this.life[i] = 0;
-      this.max[i] = ttl * (0.6 + Math.random() * 0.8);
-    }
-  }
-
-  update(dt: number) {
-    for (let i = 0; i < this.count; i++) {
-      if (this.life[i]! >= this.max[i]!) {
-        this.pos[i * 3 + 1] = -100;
-        continue;
-      }
-      this.life[i]! += dt;
-      const fade = 1 - this.life[i]! / this.max[i]!;
-      this.vel[i * 3 + 1]! -= this.gravity * dt;
-      for (let a = 0; a < 3; a++) {
-        this.vel[i * 3 + a]! *= 1 - this.drag * dt;
-        this.pos[i * 3 + a]! += this.vel[i * 3 + a]! * dt;
-      }
-      if (this.pos[i * 3 + 1]! < 0.02) {
-        this.pos[i * 3 + 1] = 0.02;
-        this.vel[i * 3 + 1]! *= -0.3;
-      }
-      for (let a = 0; a < 3; a++) this.col[i * 3 + a]! *= 0.985 + 0.015 * fade;
-    }
-    this.points.geometry.attributes.position!.needsUpdate = true;
-    this.points.geometry.attributes.color!.needsUpdate = true;
-  }
-}
-
-// ---------- coreografia ----------
-interface BotPose {
+interface Pose {
   x: number;
   z: number;
   heading: number;
-  swing: number;
-  tilt: number;
+  /** 0..1+ golpe con las pinzas hacia el frente */
+  jab: number;
+  /** 0..1 brazos arriba (celebracion) */
+  cheer: number;
+  /** salto (metros de escena) */
+  hop: number;
 }
 
-const START = 2.7;
+// ---------- coreografia (el scroll manda) ----------
+const K = 1.27; // escala de distancias para el tamano de estos robots
+const START = 2.7 * K;
 
-/** Posicion del robot naranja (o) y azul (b) segun el progreso. Determinista: el scroll manda. */
-function choreography(p: number, t: number, still: boolean): { o: BotPose; b: BotPose } {
-  const wobble = (k: number) => (still ? 0 : Math.sin(t * k));
-  // 1) En sus lugares de salida, mirandose
+function choreography(p: number, t: number, still: boolean): { o: Pose; b: Pose } {
+  const wob = (k: number) => (still ? 0 : Math.sin(t * k));
+  // En sus zonas de salida, mirandose
   let o = { x: -START, z: 0 };
   let b = { x: START, z: 0 };
-  // 2) Arrancan y chocan en el centro
+  // Arrancan y chocan en el centro
   const charge = seg(p, TIMELINE.green + 0.01, TIMELINE.clash1);
-  o.x = lerp(-START, -0.56, charge * charge);
-  b.x = lerp(START, 0.56, charge * charge);
-  o.z = Math.sin(charge * Math.PI) * 0.5;
-  b.z = -Math.sin(charge * Math.PI) * 0.5;
-  // 3) Rebote despues del choque
+  o.x = lerp(-START, -0.56 * K, charge * charge);
+  b.x = lerp(START, 0.56 * K, charge * charge);
+  o.z = Math.sin(charge * Math.PI) * 0.5 * K;
+  b.z = -Math.sin(charge * Math.PI) * 0.5 * K;
+  // Rebote
   const bounce = seg(p, TIMELINE.clash1, TIMELINE.clash1 + 0.05);
-  o = { x: lerp(o.x, -1.6, bounce), z: lerp(o.z, 0.4, bounce) };
-  b = { x: lerp(b.x, 1.6, bounce), z: lerp(b.z, -0.4, bounce) };
-  // 4) Se rodean (orbita alrededor del centro) y vuelven a chocar
+  o = { x: lerp(o.x, -1.6 * K, bounce), z: lerp(o.z, 0.4 * K, bounce) };
+  b = { x: lerp(b.x, 1.6 * K, bounce), z: lerp(b.z, -0.4 * K, bounce) };
+  // Se rodean y vuelven a chocar
   const circle = seg(p, TIMELINE.clash1 + 0.05, TIMELINE.pop);
   if (circle > 0) {
     const theta = Math.PI - 0.25 + circle * 2.4;
-    const inward = 1 - Math.exp(-Math.pow((p - TIMELINE.clash2) / 0.022, 2)) * 0.62; // se acercan en el choque 2
-    const r = 1.65 * inward;
+    const inward = 1 - Math.exp(-Math.pow((p - TIMELINE.clash2) / 0.022, 2)) * 0.62;
+    const r = 1.65 * K * inward;
     const oc = { x: Math.cos(theta) * r, z: Math.sin(theta) * r };
-    const bc = { x: -oc.x, z: -oc.z };
-    o = { x: lerp(o.x, oc.x, Math.min(1, circle * 6)), z: lerp(o.z, oc.z, Math.min(1, circle * 6)) };
-    b = { x: lerp(b.x, bc.x, Math.min(1, circle * 6)), z: lerp(b.z, bc.z, Math.min(1, circle * 6)) };
+    const k = Math.min(1, circle * 6);
+    o = { x: lerp(o.x, oc.x, k), z: lerp(o.z, oc.z, k) };
+    b = { x: lerp(b.x, -oc.x, k), z: lerp(b.z, -oc.z, k) };
   }
-  // 5) Flanqueo: el naranja se pone al lado del azul para alcanzar el globo
+  // Flanqueo: el naranja se pone al lado del cian para alcanzar el globo
   const flank = seg(p, TIMELINE.clash2 + 0.03, TIMELINE.pop);
   if (flank > 0) {
     const toB = Math.atan2(b.x - o.x, b.z - o.z);
-    const side = { x: b.x + Math.cos(toB) * 0.95, z: b.z - Math.sin(toB) * 0.95 };
+    const side = { x: b.x + Math.cos(toB) * 0.95 * K, z: b.z - Math.sin(toB) * 0.95 * K };
     o = { x: lerp(o.x, side.x, flank), z: lerp(o.z, side.z, flank) };
   }
-  // 6) Despues del globo: el azul sale disparado a una esquina, el naranja va al centro
+  // Despues del globo: el cian sale disparado a una esquina, el naranja va al centro
   const after = seg(p, TIMELINE.pop, TIMELINE.winner + 0.04);
-  const bCorner = { x: 2.9, z: 2.6 };
-  b = { x: lerp(b.x, bCorner.x, after), z: lerp(b.z, bCorner.z, after) };
-  o = { x: lerp(o.x, 0, after), z: lerp(o.z, 0.2, after) };
+  b = { x: lerp(b.x, 3.3, after), z: lerp(b.z, 3.0, after) };
+  o = { x: lerp(o.x, 0, after), z: lerp(o.z, 0.3, after) };
 
-  // Orientacion: se miran entre ellos; el azul gira descontrolado al perder; el ganador da vueltas.
   const face = (me: { x: number; z: number }, foe: { x: number; z: number }) => Math.atan2(foe.x - me.x, foe.z - me.z);
-  let oh = face(o, b);
-  let bh = face(b, o);
-  bh += after * Math.PI * 3;
   const victory = seg(p, TIMELINE.winner, 1);
-  oh = angleLerp(oh, 0.35, after) + victory * Math.PI * 2;
-
+  const oh = angleLerp(face(o, b), 0.5, after) + victory * Math.PI * 2;
+  const bh = face(b, o) + after * Math.PI * 3;
   const fighting = p > TIMELINE.green && p < TIMELINE.pop + 0.02;
   const strike = Math.exp(-Math.pow((p - (TIMELINE.pop - 0.012)) / 0.012, 2));
+  const cheer = seg(p, TIMELINE.winner, TIMELINE.winner + 0.06);
   return {
     o: {
       ...o,
-      heading: oh + wobble(3.1) * 0.04,
-      swing: (fighting ? 0.35 + 0.35 * Math.max(0, wobble(9)) : 0.1) + strike * 0.9,
-      tilt: (fighting ? 0.08 : 0) + strike * 0.25,
+      heading: oh + wob(3.1) * 0.04,
+      jab: (fighting ? 0.25 + 0.45 * Math.max(0, wob(9)) : 0) + strike,
+      cheer,
+      hop: cheer > 0 && !still ? Math.abs(Math.sin(t * 6)) * 0.35 * cheer : 0,
     },
     b: {
       ...b,
-      heading: bh + wobble(2.7) * 0.04,
-      swing: fighting ? 0.3 + 0.35 * Math.max(0, wobble(8.3)) : 0.1,
-      tilt: after > 0 ? -0.25 * (1 - victory * 0.5) : fighting ? 0.08 : 0,
+      heading: bh + wob(2.7) * 0.04,
+      jab: fighting ? 0.25 + 0.45 * Math.max(0, wob(8.3)) : 0,
+      cheer: 0,
+      hop: 0,
     },
   };
 }
 
-/** Camara: [progreso, posicion, objetivo]. */
-const CAMERA_KEYS: [number, [number, number, number], [number, number, number]][] = [
-  [0.0, [0.6, 6.4, 9.6], [0, 0.2, 0]],
-  [0.2, [0, 4.6, 7.6], [0, 0.35, 0]],
-  [0.36, [-3.2, 3.1, 5.6], [0, 0.4, 0]],
-  [0.52, [3.6, 2.9, 4.6], [0, 0.45, 0]],
-  [0.66, [2.9, 2.1, 3.9], [0.4, 0.6, 0]],
-  [0.78, [0.6, 3.1, 6.2], [0.8, 0.5, 0.8]],
-  [1.0, [-2.3, 2.3, 3.8], [0, 0.65, 0.2]],
+interface Spark {
+  p: Vec3;
+  prev: Vec3;
+  v: Vec3;
+  life: number;
+  max: number;
+  color: string;
+  drag: number;
+  gravity: number;
+}
+
+interface Part {
+  c: Vec3; // centro local (sin escala)
+  h: Vec3; // medio tamano local (sin escala)
+  color: string;
+  top?: string;
+  after?: (toWorld: (l: Vec3) => Vec3, frontVisible: boolean) => void;
+}
+
+const LIGHT = norm([0.3, 1, 0.4]);
+const LOCAL_FACES: { idx: number[]; n: Vec3 }[] = [
+  { idx: [4, 5, 6, 7], n: [0, 1, 0] },
+  { idx: [3, 2, 6, 7], n: [0, 0, 1] },
+  { idx: [0, 1, 5, 4], n: [0, 0, -1] },
+  { idx: [0, 3, 7, 4], n: [-1, 0, 0] },
+  { idx: [1, 2, 6, 5], n: [1, 0, 0] },
 ];
 
-function cameraAt(p: number): { pos: THREE.Vector3; target: THREE.Vector3 } {
-  let i = 0;
-  while (i < CAMERA_KEYS.length - 2 && p > CAMERA_KEYS[i + 1]![0]) i++;
-  const [p0, a0, t0] = CAMERA_KEYS[i]!;
-  const [p1, a1, t1] = CAMERA_KEYS[i + 1]!;
-  const k = seg(p, p0, p1);
-  return {
-    pos: new THREE.Vector3(lerp(a0[0], a1[0], k), lerp(a0[1], a1[1], k), lerp(a0[2], a1[2], k)),
-    target: new THREE.Vector3(lerp(t0[0], t1[0], k), lerp(t0[1], t1[1], k), lerp(t0[2], t1[2], k)),
-  };
-}
+const rect = (x: number, y: number, w: number, h: number): [number, number][] => [
+  [x - w, y - h],
+  [x + w, y - h],
+  [x + w, y + h],
+  [x - w, y + h],
+];
+const ring = (x: number, y: number, r: number, n = 18): [number, number][] =>
+  Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * Math.PI * 2;
+    return [x + Math.cos(a) * r, y + Math.sin(a) * r] as [number, number];
+  });
 
 // ---------- escena ----------
 export function createArenaScene(canvas: HTMLCanvasElement, opts: Options): ArenaScene {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-  const mobile = window.innerWidth < 760;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2));
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D no disponible");
+  const c2 = ctx;
+  const still = opts.reducedMotion;
 
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color("#050506");
-  scene.fog = new THREE.Fog("#050506", 14, 30);
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environment = envTex;
-  scene.environmentIntensity = 0.35;
-
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 80);
-
-  // Luces: principal con sombras, relleno y luces de color como en la arena real
-  const hemi = new THREE.HemisphereLight("#ffe9d6", "#14100c", 0.5);
-  const key = new THREE.DirectionalLight("#fff3e6", 2.4);
-  key.position.set(3, 9, 5);
-  key.castShadow = true;
-  key.shadow.mapSize.set(mobile ? 1024 : 2048, mobile ? 1024 : 2048);
-  key.shadow.camera.left = -6;
-  key.shadow.camera.right = 6;
-  key.shadow.camera.top = 6;
-  key.shadow.camera.bottom = -6;
-  key.shadow.bias = -0.0005;
-  const rimOrange = new THREE.PointLight("#ff7a00", 14, 12, 1.6);
-  rimOrange.position.set(-4, 2.4, 2.5);
-  const rimBlue = new THREE.PointLight("#3a7bff", 14, 12, 1.6);
-  rimBlue.position.set(4, 2.4, -2.5);
-  scene.add(hemi, key, rimOrange, rimBlue);
-
-  // Piso del local, mueble negro y piso de la arena
-  const venueFloor = new THREE.Mesh(
-    new THREE.PlaneGeometry(60, 60),
-    new THREE.MeshStandardMaterial({ color: "#1b1b1d", roughness: 0.85 }),
-  );
-  venueFloor.rotation.x = -Math.PI / 2;
-  venueFloor.position.y = -0.9;
-  venueFloor.receiveShadow = true;
-  const yellowLine = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 40), new THREE.MeshStandardMaterial({ color: "#e0b100", roughness: 0.6 }));
-  yellowLine.rotation.x = -Math.PI / 2;
-  yellowLine.rotation.z = 0.5;
-  yellowLine.position.set(6.5, -0.895, 2);
-  const cabinet = new THREE.Mesh(
-    new THREE.BoxGeometry(ARENA * 2 + 0.5, 0.9, ARENA * 2 + 0.5),
-    new THREE.MeshStandardMaterial({ color: "#0b0b0c", roughness: 0.6 }),
-  );
-  cabinet.position.y = -0.45;
-  cabinet.receiveShadow = true;
-  const floorTex = canvasTexture(1024, 1024, (ctx) => {
-    ctx.fillStyle = "#17181b";
-    ctx.fillRect(0, 0, 1024, 1024);
-    // Rayones del piso (de tantas batallas)
-    const rnd = seeded(7);
-    for (let i = 0; i < 900; i++) {
-      ctx.strokeStyle = `rgba(255,255,255,${0.015 + rnd() * 0.05})`;
-      ctx.lineWidth = rnd() * 1.4;
-      const x = rnd() * 1024;
-      const y = rnd() * 1024;
-      const a = rnd() * Math.PI;
-      const l = 20 + rnd() * 120;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.quadraticCurveTo(x + Math.cos(a) * l * 0.5 + rnd() * 20, y + Math.sin(a) * l * 0.5, x + Math.cos(a) * l, y + Math.sin(a) * l);
-      ctx.stroke();
-    }
-    // Zonas de salida
-    ctx.strokeStyle = "rgba(255,255,255,0.35)";
-    ctx.lineWidth = 4;
-    ctx.strokeRect(70, 400, 150, 224);
-    ctx.strokeRect(804, 400, 150, 224);
-    ctx.beginPath();
-    ctx.arc(512, 512, 120, 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(255,122,0,0.55)";
-    ctx.stroke();
-  });
-  const arenaFloor = new THREE.Mesh(
-    new THREE.PlaneGeometry(ARENA * 2, ARENA * 2),
-    new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.45, metalness: 0.35 }),
-  );
-  arenaFloor.rotation.x = -Math.PI / 2;
-  arenaFloor.receiveShadow = true;
-  scene.add(venueFloor, yellowLine, cabinet, arenaFloor);
-
-  // Tira LED alrededor del piso (azul/morado como en las fotos)
-  const ledMat = new THREE.MeshStandardMaterial({ color: "#3b4bff", emissive: "#4a3bff", emissiveIntensity: 2.2 });
-  for (let i = 0; i < 4; i++) {
-    const strip = new THREE.Mesh(new THREE.BoxGeometry(ARENA * 2, 0.025, 0.03), ledMat);
-    strip.rotation.y = (i * Math.PI) / 2;
-    const d = ARENA - 0.02;
-    strip.position.set(i % 2 ? (i === 1 ? d : -d) : 0, 0.015, i % 2 ? 0 : i === 0 ? d : -d);
-    scene.add(strip);
-  }
-
-  // Paredes de policarbonato con marco de aluminio y esquineros verdes
-  const glassMat = new THREE.MeshPhysicalMaterial({
-    color: "#cfe0ff",
-    roughness: 0.06,
-    metalness: 0,
-    transparent: true,
-    opacity: 0.1,
-    side: THREE.DoubleSide,
-    depthWrite: false,
-  });
-  const alu = new THREE.MeshStandardMaterial({ color: "#c3c8cf", roughness: 0.28, metalness: 0.9 });
-  const green = new THREE.MeshStandardMaterial({ color: "#5cd65c", roughness: 0.45 });
-  for (let i = 0; i < 4; i++) {
-    const wall = new THREE.Mesh(new THREE.PlaneGeometry(ARENA * 2, WALL_H), glassMat);
-    const a = (i * Math.PI) / 2;
-    wall.position.set(Math.sin(a) * ARENA, WALL_H / 2, Math.cos(a) * ARENA);
-    wall.rotation.y = a;
-    wall.renderOrder = 2;
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(ARENA * 2 + 0.1, 0.06, 0.06), alu);
-    rail.position.set(Math.sin(a) * ARENA, WALL_H, Math.cos(a) * ARENA);
-    rail.rotation.y = a;
-    rail.castShadow = true;
-    scene.add(wall, rail);
-  }
-  for (const sx of [-1, 0, 1]) {
-    for (const sz of [-1, 0, 1]) {
-      if (sx === 0 && sz === 0) continue;
-      if (sx !== 0 && sz !== 0) {
-        const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), green);
-        bracket.position.set(sx * ARENA, 0.08, sz * ARENA);
-        scene.add(bracket);
-      }
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.07, WALL_H + 0.06, 0.07), alu);
-      post.position.set(sx * ARENA, WALL_H / 2, sz * ARENA);
-      post.castShadow = true;
-      scene.add(post);
-    }
-  }
-
-  // Pared de madera del local con la pantalla del logo
-  const woodTex = canvasTexture(1024, 512, (ctx) => {
-    for (let i = 0; i < 16; i++) {
-      const l = 22 + Math.round(Math.random() * 10);
-      ctx.fillStyle = `hsl(28, 38%, ${l}%)`;
-      ctx.fillRect(i * 64, 0, 64, 512);
-      ctx.fillStyle = "rgba(0,0,0,0.35)";
-      ctx.fillRect(i * 64, 0, 2, 512);
-      for (let k = 0; k < 14; k++) {
-        ctx.strokeStyle = `rgba(60,30,10,${0.08 + Math.random() * 0.12})`;
-        ctx.beginPath();
-        const x = i * 64 + Math.random() * 64;
-        ctx.moveTo(x, 0);
-        ctx.bezierCurveTo(x + 6, 170, x - 6, 340, x + 3, 512);
-        ctx.stroke();
-      }
-    }
-  });
-  woodTex.wrapS = THREE.RepeatWrapping;
-  woodTex.repeat.set(3, 1);
-  const backWall = new THREE.Mesh(new THREE.PlaneGeometry(36, 9), new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.85 }));
-  backWall.position.set(0, 3.6, -9);
-  backWall.receiveShadow = true;
-  const tvTex = canvasTexture(1024, 576, (ctx) => {
-    const g = ctx.createLinearGradient(0, 0, 1024, 576);
-    g.addColorStop(0, "#020613");
-    g.addColorStop(1, "#06143a");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 1024, 576);
-    ctx.textAlign = "center";
-    ctx.shadowColor = "#2f8bff";
-    ctx.shadowBlur = 30;
-    ctx.fillStyle = "#e9f3ff";
-    ctx.font = "italic 900 170px Arial Narrow, Arial, sans-serif";
-    ctx.fillText("BOT SPOT", 512, 300);
-    ctx.shadowColor = "#ff7a00";
-    ctx.fillStyle = "#ffb15c";
-    ctx.font = "italic 800 64px Arial Narrow, Arial, sans-serif";
-    ctx.fillText("IT'S BATTLE TIME", 512, 410);
-  });
-  const tv = new THREE.Mesh(
-    new THREE.PlaneGeometry(5.2, 2.9),
-    new THREE.MeshStandardMaterial({ map: tvTex, emissive: "#ffffff", emissiveMap: tvTex, emissiveIntensity: 0.9 }),
-  );
-  tv.position.set(-1.5, 3.9, -8.95);
-  const tvFrame = new THREE.Mesh(new THREE.BoxGeometry(5.4, 3.1, 0.1), new THREE.MeshStandardMaterial({ color: "#0a0a0a", roughness: 0.4 }));
-  tvFrame.position.set(-1.5, 3.9, -9.02);
-  scene.add(backWall, tvFrame, tv);
-
-  // Semaforo de salida
-  const lightPole = new THREE.Group();
-  lightPole.position.set(-ARENA - 0.7, 0, -ARENA + 0.4);
-  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.4, 12), alu);
-  pole.position.y = 1.2 - 0.9;
-  pole.scale.y = 1.4;
-  const housing = new THREE.Mesh(new RoundedBoxGeometry(0.38, 1.0, 0.32, 3, 0.05), new THREE.MeshStandardMaterial({ color: "#111", roughness: 0.5 }));
-  housing.position.y = 2.1;
-  const lampColors = ["#ff2a1a", "#ffc21a", "#2bff5e"];
-  const lamps = lampColors.map((c, i) => {
-    const m = new THREE.MeshStandardMaterial({ color: "#222", emissive: c, emissiveIntensity: 0 });
-    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.11, 20, 16), m);
-    lamp.position.set(0, 2.42 - i * 0.31, 0.15);
-    lightPole.add(lamp);
-    return m;
-  });
-  const signal = new THREE.PointLight("#ff2a1a", 0, 5, 2);
-  signal.position.set(0.4, 2.1, 0.6);
-  lightPole.add(pole, housing, signal);
-  lightPole.rotation.y = 0.75;
-  scene.add(lightPole);
-
-  // Pelotas de colores regadas en la arena
-  const rnd = seeded(42);
-  const ballColors = ["#ff3b3b", "#2ee66b", "#ffd21a", "#3b8bff", "#ff5fd2", "#ff8c1a"];
-  const balls = Array.from({ length: mobile ? 12 : 18 }, (_, i) => {
-    const r = 0.08 + rnd() * 0.05;
-    const mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(r, 20, 14),
-      new THREE.MeshStandardMaterial({ color: ballColors[i % ballColors.length], roughness: 0.35 }),
-    );
-    let x = 0;
-    let z = 0;
-    do {
-      x = (rnd() * 2 - 1) * (ARENA - 0.4);
-      z = (rnd() * 2 - 1) * (ARENA - 0.4);
-    } while (Math.abs(z) < 1.4 && Math.abs(x) > 1.6); // fuera de las zonas de salida
-    mesh.position.set(x, r, z);
-    mesh.castShadow = true;
-    scene.add(mesh);
-    return { mesh, r, vx: 0, vz: 0, home: new THREE.Vector3(x, r, z) };
-  });
-
-  // Robots: naranja (gana) y azul
-  const orange = new Robot({ base: "#ff6a00", torso: "#9ea3aa", head: "#ff7a00", balloon: "#ff2d2d", chest: "hex", chestColor: "#ff7a00" });
-  const blue = new Robot({ base: "#1f5fff", torso: "#e9edf2", head: "#2f6bff", balloon: "#2f8bff", chest: "led", chestColor: "#5c8dff" });
-  scene.add(orange.group, blue.group);
-
-  // Chispas, pedazos de globo y confeti
-  const sparks = new Particles(mobile ? 260 : 420, 0.06, 6, 1.2);
-  const confetti = new Particles(mobile ? 220 : 380, 0.09, 2.2, 1.6);
-  (confetti.points.material as THREE.PointsMaterial).blending = THREE.NormalBlending;
-  scene.add(sparks.points, confetti.points);
-  const sparkColors = [new THREE.Color("#ffd27a"), new THREE.Color("#ff9a2e"), new THREE.Color("#fff3c4")];
-  const popColors = [new THREE.Color("#2f8bff"), new THREE.Color("#8cc4ff"), new THREE.Color("#ffffff")];
-  const confettiColors = ["#ff7a00", "#ffd21a", "#2ee66b", "#3b8bff", "#ff5fd2", "#ffffff"].map((c) => new THREE.Color(c));
-  const popRing = new THREE.Mesh(
-    new THREE.RingGeometry(0.2, 0.26, 40),
-    new THREE.MeshBasicMaterial({ color: "#bfe0ff", transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }),
-  );
-  scene.add(popRing);
-  let popAge = 10;
-
-  // ---------- estado ----------
+  let W = 0;
+  let H = 0;
+  const stars = Array.from({ length: 140 }, () => ({
+    x: Math.random(),
+    y: Math.random() * 0.55,
+    r: Math.random() * 1.2 + 0.2,
+    t: Math.random() * Math.PI * 2,
+  }));
+  let sparks: Spark[] = [];
   let target = 0;
   let progress = 0;
   let lastProgress = 0;
@@ -730,127 +244,594 @@ export function createArenaScene(canvas: HTMLCanvasElement, opts: Options): Aren
   let active = true;
   let raf = 0;
   let last = performance.now();
+  let popAt = -1e9;
+  let popPos: Vec3 = [0, 0, 0];
   let confettiTimer = 0;
-  let zoomOut = 1;
-  const still = opts.reducedMotion;
+  let snapped = false;
 
+  // ---- camara ----
+  let cam: Vec3 = [0, 0, 0];
+  let right: Vec3 = [1, 0, 0];
+  let up: Vec3 = [0, 1, 0];
+  let fwd: Vec3 = [0, 0, 1];
+  let focal = 1;
+  let cx = 0;
+  let cy = 0;
+  let look: Vec3 = [0, 0, 0];
+
+  /** Punto que sigue la camara (entre los robots, o el ganador al final). */
+  let focus: Vec3 = [0, 0.3, 0];
+
+  /** [progreso, inclinacion, distancia, giro, cuanto sigue a los robots] */
+  const CAMERA_KEYS: [number, number, number, number, number][] = [
+    [0.0, 0.5, 14, 0.35, 0],
+    [0.12, 0.55, 12.5, 0.2, 0],
+    [0.3, 0.27, 8.6, -0.15, 0.55],
+    [0.45, 0.22, 8.1, -0.6, 0.8],
+    [0.6, 0.3, 8.3, -1.2, 0.8],
+    [0.7, 0.25, 8.0, -1.6, 0.9],
+    [0.8, 0.72, 11, -2.0, 0.4],
+    [1.0, 1.38, 15.5, -2.25, 0],
+  ];
+
+  function setCamera(time: number) {
+    const p = progress;
+    let i = 0;
+    while (i < CAMERA_KEYS.length - 2 && p > CAMERA_KEYS[i + 1]![0]) i++;
+    const k0 = CAMERA_KEYS[i]!;
+    const k1 = CAMERA_KEYS[i + 1]!;
+    const k = seg(p, k0[0], k1[0]);
+    const pitch = lerp(k0[1], k1[1], k);
+    const dist = lerp(k0[2], k1[2], k);
+    const idle = still ? 0 : Math.sin(time * 0.00012) * 0.18;
+    const yaw = lerp(k0[3], k1[3], k) + idle + pointer.x * 0.08;
+    const follow = lerp(k0[4], k1[4], k);
+    look = [focus[0] * follow, 0.3 + (focus[1] - 0.3) * follow, focus[2] * follow];
+    cam = [
+      look[0] + dist * Math.cos(pitch) * Math.sin(yaw),
+      look[1] + dist * Math.sin(pitch) + pointer.y * 0.3,
+      look[2] + dist * Math.cos(pitch) * Math.cos(yaw),
+    ];
+    // La camara nunca entra a la arena (se queda fuera de las paredes).
+    const rh = Math.hypot(cam[0], cam[2]);
+    const minR = ARENA * 1.5;
+    if (rh < minR && pitch < 1.1) {
+      cam[0] *= minR / (rh || 1);
+      cam[2] *= minR / (rh || 1);
+    }
+    fwd = norm(sub(look, cam));
+    right = norm(cross(fwd, Math.abs(fwd[1]) > 0.98 ? [0, 0, -1] : [0, 1, 0]));
+    up = cross(right, fwd);
+    const wide = W > 900;
+    focal = wide ? Math.min(W * 0.62, H * 1.05) : Math.min(W * 1.15, H * 1.25);
+    // En la portada la arena va a un lado del texto; despues se centra.
+    const hero = 1 - seg(p, 0.03, 0.12);
+    cx = W * (0.5 + opts.offsetRight() * hero);
+    // Al final la arena baja un poco para que el ganador se vea debajo del ultimo titulo.
+    cy = H * ((wide ? 0.6 : 0.62) + opts.offsetDown() * hero - (1 - hero) * 0.06 + seg(p, 0.8, 0.95) * 0.26);
+  }
+
+  function project(p: Vec3): [number, number, number] {
+    const v = sub(p, cam);
+    const z = Math.max(dot(v, fwd), 0.1);
+    return [cx + (dot(v, right) * focal) / z, cy - (dot(v, up) * focal) / z, z];
+  }
+
+  const behind = (p: Vec3) => dot(sub(p, cam), fwd) < 0.25;
+
+  function poly(points: Vec3[], fill: string | CanvasGradient | null, stroke?: string, lw = 1) {
+    if (points.some(behind)) return;
+    c2.beginPath();
+    points.forEach((p, i) => {
+      const [x, y] = project(p);
+      if (i === 0) c2.moveTo(x, y);
+      else c2.lineTo(x, y);
+    });
+    c2.closePath();
+    if (fill) {
+      c2.fillStyle = fill;
+      c2.fill();
+    }
+    if (stroke) {
+      c2.strokeStyle = stroke;
+      c2.lineWidth = lw;
+      c2.stroke();
+    }
+  }
+
+  function line(a: Vec3, b: Vec3, color: string, lw = 1) {
+    if (behind(a) || behind(b)) return;
+    const [ax, ay] = project(a);
+    const [bx, by] = project(b);
+    c2.beginPath();
+    c2.moveTo(ax, ay);
+    c2.lineTo(bx, by);
+    c2.strokeStyle = color;
+    c2.lineWidth = lw;
+    c2.stroke();
+  }
+
+  function circle3d(c: Vec3, r: number, steps = 40): Vec3[] {
+    return Array.from({ length: steps }, (_, i) => {
+      const a = (i / steps) * Math.PI * 2;
+      return [c[0] + Math.cos(a) * r, c[1], c[2] + Math.sin(a) * r] as Vec3;
+    });
+  }
+
+  // ---- escenario (como la primera version) ----
+  function drawSky(time: number) {
+    const g = c2.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "#030405");
+    g.addColorStop(0.6, "#0a0806");
+    g.addColorStop(1, "#000");
+    c2.fillStyle = g;
+    c2.fillRect(0, 0, W, H);
+    for (const s of stars) {
+      const a = still ? 0.6 : 0.35 + 0.35 * Math.sin(time * 0.002 + s.t);
+      c2.fillStyle = `rgba(255,255,255,${a})`;
+      c2.fillRect(s.x * W, s.y * H, s.r, s.r);
+    }
+  }
+
+  function countdownColor(): string {
+    if (progress < TIMELINE.yellow) return "255, 59, 48";
+    if (progress < TIMELINE.green) return "255, 198, 26";
+    if (progress < TIMELINE.green + 0.05) return "46, 230, 107";
+    return ORANGE;
+  }
+
+  function drawFloor(time: number) {
+    const o = ARENA + 1.6;
+    poly(
+      [
+        [-o, -0.02, -o],
+        [o, -0.02, -o],
+        [o, -0.02, o],
+        [-o, -0.02, o],
+      ],
+      "#07080a",
+      "rgba(255,255,255,0.06)",
+    );
+    const [fx, fy] = project([0, 0, 0]);
+    const [ex] = project([ARENA, 0, 0]);
+    const glow = c2.createRadialGradient(fx, fy, 0, fx, fy, Math.abs(ex - fx) * 1.4 + 1);
+    glow.addColorStop(0, "#2a2622");
+    glow.addColorStop(0.6, "#16171a");
+    glow.addColorStop(1, "#0c0d0f");
+    poly(
+      [
+        [-ARENA, 0, -ARENA],
+        [ARENA, 0, -ARENA],
+        [ARENA, 0, ARENA],
+        [-ARENA, 0, ARENA],
+      ],
+      glow,
+    );
+    for (let i = -ARENA + 1; i < ARENA; i++) {
+      line([i, 0, -ARENA], [i, 0, ARENA], "rgba(255,255,255,0.07)");
+      line([-ARENA, 0, i], [ARENA, 0, i], "rgba(255,255,255,0.07)");
+    }
+    // Franja de peligro naranja/negra en el borde
+    const band = 0.38;
+    const stepLen = 0.5;
+    for (let side = 0; side < 4; side++) {
+      for (let t = -ARENA, k = 0; t < ARENA - 0.001; t += stepLen, k++) {
+        const t2 = Math.min(t + stepLen, ARENA);
+        const quad = (
+          [
+            [t, 0.005, -ARENA],
+            [t2, 0.005, -ARENA],
+            [t2, 0.005, -ARENA + band],
+            [t, 0.005, -ARENA + band],
+          ] as Vec3[]
+        ).map((p) => rotateY(p, (side * Math.PI) / 2));
+        poly(quad, k % 2 === 0 ? `rgba(${ORANGE},0.85)` : "rgba(10,10,10,0.9)");
+      }
+    }
+    // Circulo central: hace de semaforo (rojo, amarillo, verde) y luego late en naranja
+    const col = countdownColor();
+    const beforeGo = progress < TIMELINE.green + 0.05;
+    const pulse = still ? 0.7 : beforeGo ? 0.75 + 0.2 * Math.sin(time * 0.008) : 0.45 + 0.25 * Math.sin(time * 0.003);
+    if (beforeGo) {
+      const [gx, gy, gz] = project([0, 0.01, 0]);
+      const rr = (1.6 * focal) / gz;
+      const halo = c2.createRadialGradient(gx, gy, 0, gx, gy, rr);
+      halo.addColorStop(0, `rgba(${col},0.35)`);
+      halo.addColorStop(1, `rgba(${col},0)`);
+      c2.fillStyle = halo;
+      c2.beginPath();
+      c2.ellipse(gx, gy, rr, rr * 0.6, 0, 0, Math.PI * 2);
+      c2.fill();
+    }
+    poly(circle3d([0, 0.006, 0], 1.3), null, `rgba(${col},${pulse})`, beforeGo ? 3 : 2);
+    poly(circle3d([0, 0.006, 0], 0.9), null, "rgba(255,255,255,0.12)", 1);
+    // Zonas de salida
+    for (const sgn of [-1, 1]) {
+      poly(
+        [
+          [sgn * 2.9, 0.006, -0.9],
+          [sgn * 4.3, 0.006, -0.9],
+          [sgn * 4.3, 0.006, 0.9],
+          [sgn * 2.9, 0.006, 0.9],
+        ],
+        null,
+        "rgba(255,255,255,0.18)",
+      );
+    }
+  }
+
+  // Reflectores en las 4 esquinas que barren el piso
+  function drawLights(time: number, beams: boolean) {
+    c2.save();
+    c2.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 4; i++) {
+      const sx = i < 2 ? -1 : 1;
+      const sz = i % 2 === 0 ? -1 : 1;
+      const lamp: Vec3 = [sx * (ARENA + 2.2), 6.5, sz * (ARENA + 2.2)];
+      const a = (still ? 0 : time * 0.00035) + i * (Math.PI / 2);
+      const spot: Vec3 = [Math.cos(a) * 2.2, 0, Math.sin(a) * 2.2];
+      if (behind(lamp) || behind(spot)) continue;
+      const [lx, ly] = project(lamp);
+      const [px, py, pz] = project(spot);
+      const rad = (2.2 * focal) / pz;
+      if (beams) {
+        const g = c2.createLinearGradient(lx, ly, px, py);
+        g.addColorStop(0, "rgba(255,240,220,0.28)");
+        g.addColorStop(1, "rgba(255,200,150,0)");
+        const ang = Math.atan2(py - ly, px - lx) + Math.PI / 2;
+        c2.beginPath();
+        c2.moveTo(lx, ly);
+        c2.lineTo(px + Math.cos(ang) * rad, py + Math.sin(ang) * rad * 0.6);
+        c2.lineTo(px - Math.cos(ang) * rad, py - Math.sin(ang) * rad * 0.6);
+        c2.closePath();
+        c2.fillStyle = g;
+        c2.fill();
+        const s = c2.createRadialGradient(px, py, 0, px, py, rad);
+        s.addColorStop(0, "rgba(255,230,200,0.16)");
+        s.addColorStop(1, "rgba(255,230,200,0)");
+        c2.fillStyle = s;
+        c2.beginPath();
+        c2.ellipse(px, py, rad, rad * 0.55, 0, 0, Math.PI * 2);
+        c2.fill();
+      } else {
+        const h = c2.createRadialGradient(lx, ly, 0, lx, ly, 26);
+        h.addColorStop(0, "rgba(255,255,255,0.95)");
+        h.addColorStop(0.3, "rgba(255,220,180,0.45)");
+        h.addColorStop(1, "rgba(255,200,150,0)");
+        c2.fillStyle = h;
+        c2.fillRect(lx - 26, ly - 26, 52, 52);
+      }
+    }
+    c2.restore();
+    if (!beams) {
+      for (let i = 0; i < 4; i++) {
+        const sx = i < 2 ? -1 : 1;
+        const sz = i % 2 === 0 ? -1 : 1;
+        line([sx * (ARENA + 2.2), 0, sz * (ARENA + 2.2)], [sx * (ARENA + 2.2), 6.5, sz * (ARENA + 2.2)], "rgba(120,120,130,0.35)", 2);
+      }
+    }
+  }
+
+  // Paredes de vidrio: las del fondo antes de los robots, las de enfrente despues
+  function drawWalls(front: boolean) {
+    const corners: Vec3[] = [
+      [-ARENA, 0, -ARENA],
+      [ARENA, 0, -ARENA],
+      [ARENA, 0, ARENA],
+      [-ARENA, 0, ARENA],
+    ];
+    for (let i = 0; i < 4; i++) {
+      const a = corners[i]!;
+      const b = corners[(i + 1) % 4]!;
+      const mid: Vec3 = [(a[0] + b[0]) / 2, WALL_H / 2, (a[2] + b[2]) / 2];
+      const isFront = dot(sub(mid, cam), fwd) < dot(sub([0, WALL_H / 2, 0], cam), fwd);
+      if (isFront !== front) continue;
+      const at: Vec3 = [a[0], WALL_H, a[2]];
+      const bt: Vec3 = [b[0], WALL_H, b[2]];
+      poly([a, b, bt, at], "rgba(170,190,215,0.05)");
+      line(at, bt, "rgba(255,255,255,0.35)", 1.5);
+      line(a, at, "rgba(255,255,255,0.3)", 2);
+    }
+  }
+
+  // ---- robots cuadrados ----
+  /** Dibuja una caja con sombreado por cara (solo las caras que miran a la camara). */
+  function drawBox(part: Part, toWorld: (l: Vec3) => Vec3, heading: number) {
+    const [px, py, pz] = part.c;
+    const [w, h, d] = part.h;
+    const local: Vec3[] = [
+      [px - w, py - h, pz - d],
+      [px + w, py - h, pz - d],
+      [px + w, py - h, pz + d],
+      [px - w, py - h, pz + d],
+      [px - w, py + h, pz - d],
+      [px + w, py + h, pz - d],
+      [px + w, py + h, pz + d],
+      [px - w, py + h, pz + d],
+    ];
+    const v = local.map(toWorld);
+    let frontVisible = false;
+    for (const f of LOCAL_FACES) {
+      const pts = f.idx.map((i) => v[i]!);
+      const n = rotateY(f.n, heading);
+      const fc: Vec3 = [(pts[0]![0] + pts[2]![0]) / 2, (pts[0]![1] + pts[2]![1]) / 2, (pts[0]![2] + pts[2]![2]) / 2];
+      if (dot(n, sub(cam, fc)) <= 0) continue;
+      if (f.n[2] === 1) frontVisible = true;
+      const shade = 0.42 + 0.58 * Math.max(0, dot(n, LIGHT));
+      poly(pts, f.n[1] === 1 && part.top ? part.top : part.color, "rgba(0,0,0,0.45)", 1);
+      c2.globalAlpha = 1 - shade;
+      poly(pts, "#000");
+      c2.globalAlpha = 1;
+    }
+    part.after?.(toWorld, frontVisible);
+  }
+
+  /** Figura plana sobre la cara frontal (puntos locales en el plano z = zf). */
+  function faceShape(toWorld: (l: Vec3) => Vec3, pts: [number, number][], zf: number, fill: string, glow = 0) {
+    if (glow) {
+      c2.save();
+      c2.shadowColor = fill;
+      c2.shadowBlur = glow;
+    }
+    poly(
+      pts.map(([x, y]) => toWorld([x, y, zf])),
+      fill,
+    );
+    if (glow) c2.restore();
+  }
+
+  function robotParts(s: RobotStyle, pose: Pose, ledLevel: number): Part[] {
+    const jab = clamp(pose.jab, 0, 1.4);
+    const cheer = pose.cheer;
+    const arm = (sx: number): Part[] => {
+      const lift = cheer * 0.42;
+      const reach = jab * 0.16 * (1 - cheer);
+      return [
+        { c: [sx * 0.32, 0.59 + lift * 0.4, reach * 0.4], h: [0.065, 0.075, 0.08], color: s.body },
+        {
+          c: [sx * 0.33, 0.45 + lift + jab * 0.08, 0.03 + reach],
+          h: [0.078, 0.065, 0.072],
+          color: "#141518",
+          top: "#2a2c31",
+        },
+      ];
+    };
+    const led = `rgba(${hexToRgb(s.led)},${ledLevel})`;
+    return [
+      // Base ancha con visera negra
+      {
+        c: [0, 0.13, 0],
+        h: [0.5, 0.11, 0.46],
+        color: s.body,
+        after: (tw, front) => {
+          if (!front) return;
+          faceShape(tw, rect(0, 0.14, 0.42, 0.05), 0.462, "#060708");
+          faceShape(tw, rect(0.2, 0.14, 0.025, 0.035), 0.463, "rgba(255,255,255,0.6)");
+        },
+      },
+      { c: [0, 0.255, 0], h: [0.33, 0.02, 0.28], color: "#141518" },
+      // Ruedas
+      { c: [-0.56, 0.15, 0.05], h: [0.06, 0.15, 0.16], color: "#0f1012", top: "#22242a" },
+      { c: [0.56, 0.15, 0.05], h: [0.06, 0.15, 0.16], color: "#0f1012", top: "#22242a" },
+      // Cuello
+      { c: [0, 0.32, 0], h: [0.09, 0.05, 0.08], color: s.bodyDark },
+      // Torso con panel de tres barras LED
+      {
+        c: [0, 0.53, 0],
+        h: [0.25, 0.18, 0.17],
+        color: s.body,
+        after: (tw, front) => {
+          if (!front) return;
+          faceShape(tw, rect(0, 0.53, 0.19, 0.125), 0.172, "#101114");
+          for (const dy of [0.065, 0, -0.065]) faceShape(tw, rect(0, 0.53 + dy, 0.155, 0.021), 0.174, led, 14);
+        },
+      },
+      ...arm(-1),
+      ...arm(1),
+      // Cabeza cuadrada
+      {
+        c: [0, 0.91, 0],
+        h: [0.2, 0.15, 0.15],
+        color: s.head,
+        after: (tw, front) => {
+          if (!front) return;
+          if (s.face === "mustache") {
+            faceShape(tw, rect(0, 0.945, 0.2, 0.009), 0.152, "#0c0d0f");
+            for (const sx of [-1, 1]) {
+              faceShape(tw, ring(sx * 0.088, 0.93, 0.07), 0.153, "#0c0d0f");
+              faceShape(tw, ring(sx * 0.088, 0.93, 0.05), 0.154, "#f6f9ff", 12);
+            }
+            faceShape(
+              tw,
+              [
+                [0, 0.852],
+                [-0.035, 0.862],
+                [-0.085, 0.856],
+                [-0.11, 0.83],
+                [-0.07, 0.838],
+                [-0.03, 0.83],
+                [0, 0.842],
+                [0.03, 0.83],
+                [0.07, 0.838],
+                [0.11, 0.83],
+                [0.085, 0.856],
+                [0.035, 0.862],
+              ],
+              0.153,
+              "#0c0d0f",
+            );
+          } else {
+            faceShape(tw, rect(0, 0.93, 0.15, 0.05), 0.152, "#060708");
+            for (const sx of [-1, 1]) faceShape(tw, rect(sx * 0.065, 0.93, 0.03, 0.02), 0.154, led, 12);
+            faceShape(tw, rect(0, 0.84, 0.06, 0.01), 0.153, "#5d6573");
+          }
+        },
+      },
+      { c: [-0.11, 1.075, 0], h: [0.03, 0.025, 0.03], color: "#141518" },
+      { c: [0.11, 1.075, 0], h: [0.03, 0.025, 0.03], color: "#141518" },
+    ];
+  }
+
+  function balloonTop(pose: Pose, sway: number): Vec3 {
+    return [pose.x + Math.sin(sway) * 0.18, 1.44 * BOT + pose.hop, pose.z];
+  }
+
+  function drawBalloon(s: RobotStyle, pose: Pose, sway: number) {
+    const top = balloonTop(pose, sway);
+    const [bx, by, bz] = project(top);
+    const r = (0.22 * BOT * focal) / bz;
+    line([pose.x, 1.06 * BOT + pose.hop, pose.z], [top[0], top[1] - 0.24 * BOT, top[2]], "rgba(240,240,240,0.7)", 1);
+    const g = c2.createRadialGradient(bx - r * 0.35, by - r * 0.45, r * 0.1, bx, by, r * 1.2);
+    g.addColorStop(0, "rgba(255,255,255,0.9)");
+    g.addColorStop(0.2, s.balloon);
+    g.addColorStop(1, s.balloon);
+    c2.fillStyle = g;
+    c2.beginPath();
+    c2.ellipse(bx, by, r, r * 1.18, sway * 0.6, 0, Math.PI * 2);
+    c2.fill();
+    c2.beginPath();
+    c2.moveTo(bx - r * 0.12, by + r * 1.15);
+    c2.lineTo(bx + r * 0.12, by + r * 1.15);
+    c2.lineTo(bx, by + r * 1.32);
+    c2.closePath();
+    c2.fill();
+  }
+
+  function drawRobot(s: RobotStyle, pose: Pose, balloon: boolean, leds: number, sway: number) {
+    poly(circle3d([pose.x, 0.004, pose.z], 0.85 * BOT, 24), "rgba(0,0,0,0.55)");
+    const toWorld = (l: Vec3): Vec3 => {
+      const r = rotateY([l[0] * BOT, l[1] * BOT + pose.hop, l[2] * BOT], pose.heading);
+      return [r[0] + pose.x, r[1], r[2] + pose.z];
+    };
+    // Las piezas mas lejanas primero (el brazo de atras queda detras del torso).
+    const parts = robotParts(s, pose, leds)
+      .map((p) => ({ p, d: project(toWorld(p.c))[2] }))
+      .sort((a, b) => b.d - a.d);
+    for (const { p } of parts) drawBox(p, toWorld, pose.heading);
+    if (balloon) drawBalloon(s, pose, sway);
+  }
+
+  // ---- particulas ----
+  function burst(at: Vec3, n: number, colors: string[], speed: number, upv: number, ttl: number, gravity = 9.8, drag = 0.98) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = rand(0.4, 1.2) * speed;
+      sparks.push({
+        p: at,
+        prev: at,
+        v: [Math.cos(a) * sp, rand(0.5, 1.5) * upv, Math.sin(a) * sp],
+        life: 0,
+        max: rand(0.6, 1.2) * ttl,
+        color: colors[i % colors.length]!,
+        gravity,
+        drag,
+      });
+    }
+  }
+
+  function updateSparks(dt: number) {
+    for (const s of sparks) {
+      s.prev = s.p;
+      s.v = [s.v[0] * s.drag, s.v[1] - s.gravity * dt, s.v[2] * s.drag];
+      let y = s.p[1] + s.v[1] * dt;
+      if (y < 0) {
+        y = 0;
+        s.v[1] *= -0.35;
+      }
+      s.p = [s.p[0] + s.v[0] * dt, y, s.p[2] + s.v[2] * dt];
+      s.life += dt;
+    }
+    sparks = sparks.filter((s) => s.life < s.max);
+  }
+
+  function drawSparks() {
+    c2.save();
+    c2.globalCompositeOperation = "lighter";
+    for (const s of sparks) {
+      c2.globalAlpha = 1 - s.life / s.max;
+      line(s.prev, s.p, s.color, 2.2);
+    }
+    c2.restore();
+  }
+
+  function drawPopRing(now: number) {
+    const age = (now - popAt) / 1000;
+    if (age < 0 || age > 0.5) return;
+    const [x, y, z] = project(popPos);
+    const r = ((0.3 + age * 4) * focal) / z;
+    c2.strokeStyle = `rgba(255,208,220,${0.8 - age * 1.6})`;
+    c2.lineWidth = 3;
+    c2.beginPath();
+    c2.arc(x, y, r, 0, Math.PI * 2);
+    c2.stroke();
+  }
+
+  // ---- bucle ----
   function resize() {
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
-    if (!w || !h) return;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    const shift = opts.offsetRight();
-    const down = opts.offsetDown();
-    if (shift || down) camera.setViewOffset(w, h, -w * shift, -h * down, w, h);
-    else camera.clearViewOffset();
-    // En pantallas angostas o verticales la camara se aleja para que quepan los dos robots.
-    zoomOut = clamp(1.5 / camera.aspect, 1, 2.1);
-    camera.fov = 38;
-    camera.updateProjectionMatrix();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = canvas.clientWidth;
+    H = canvas.clientHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    c2.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  function crossed(at: number) {
-    return lastProgress < at && progress >= at;
-  }
+  const crossed = (at: number) => lastProgress < at && progress >= at;
 
   function step(now: number) {
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
     const t = now / 1000;
     lastProgress = progress;
-    // El progreso sigue al scroll con suavidad (mas rapido si el salto es grande).
     progress += (target - progress) * Math.min(1, dt * (still ? 30 : 6));
     if (Math.abs(target - progress) < 0.0005) progress = target;
 
     const { o, b } = choreography(progress, t, still);
-    const bob = (k: number) => (still ? 0 : Math.sin(t * k) * 0.012);
-    orange.pose(o.x, o.z, o.heading, o.swing, o.tilt, bob(5.1));
-    blue.pose(b.x, b.z, b.heading, b.swing, b.tilt, bob(4.7));
-    const victory = seg(progress, TIMELINE.winner, TIMELINE.winner + 0.08);
-    orange.setVictory(victory);
-    orange.setBalloon(true, still ? 0 : Math.sin(t * 1.7) * 0.12);
-    blue.setBalloon(progress < TIMELINE.pop, still ? 0 : Math.sin(t * 1.9 + 1) * 0.12);
+    const popped = progress >= TIMELINE.pop;
+    const swayO = still ? 0 : Math.sin(t * 1.7) * 0.15;
+    const swayB = still ? 0 : Math.sin(t * 1.9 + 1) * 0.15;
+    if (!popped) popPos = balloonTop(b, swayB);
 
     // Eventos al pasar por un momento de la pelea (solo hacia adelante)
-    const mid = new THREE.Vector3((o.x + b.x) / 2, 0.45, (o.z + b.z) / 2);
-    if (crossed(TIMELINE.clash1) || crossed(TIMELINE.clash2)) sparks.emit(mid, mobile ? 70 : 110, sparkColors, 3.2, 3.5, 0.8);
+    const mid: Vec3 = [(o.x + b.x) / 2, 0.45 * BOT, (o.z + b.z) / 2];
+    if (crossed(TIMELINE.clash1) || crossed(TIMELINE.clash2)) burst(mid, 46, ["#ffd27a", "#ff9a2e", "#fff3c4"], 4.5, 4, 0.8);
     if (crossed(TIMELINE.pop)) {
-      const at = blue.balloonWorld();
-      sparks.emit(at, 90, popColors, 2.6, 1.5, 0.9);
-      popRing.position.copy(at);
-      popAge = 0;
+      popAt = now;
+      burst(popPos, 40, ["#ff3b6b", "#ffb3c6", "#ffffff"], 3.2, 2, 0.9);
     }
-    if (progress < TIMELINE.pop) popAge = 10;
-    popAge += dt;
-    popRing.lookAt(camera.position);
-    popRing.scale.setScalar(1 + popAge * 9);
-    (popRing.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 0.8 - popAge * 2.4);
-
     if (progress > TIMELINE.winner && !still) {
       confettiTimer -= dt;
       if (confettiTimer <= 0) {
-        confetti.emit(new THREE.Vector3(orange.x, 2.2, orange.z), 26, confettiColors, 1.6, 2.2, 2.4);
-        confettiTimer = 0.35;
+        burst([o.x, 2.6 * BOT, o.z], 14, ["#ff7a1a", "#2fd6f2", "#ffc61a", "#f2f8fa", "#b07a4a"], 1.8, 1.5, 2.2, 2.2, 0.97);
+        confettiTimer = 0.3;
       }
     }
-    sparks.update(dt);
-    confetti.update(dt);
+    updateSparks(dt);
 
-    // Pelotas: los robots las empujan
-    for (const ball of balls) {
-      for (const bot of [orange, blue]) {
-        const dx = ball.mesh.position.x - bot.x;
-        const dz = ball.mesh.position.z - bot.z;
-        const d = Math.hypot(dx, dz);
-        const min = BASE_R * 1.05 + ball.r;
-        if (d < min && d > 0.0001) {
-          const push = (min - d) / d;
-          ball.mesh.position.x += dx * push;
-          ball.mesh.position.z += dz * push;
-          ball.vx += (dx / d) * 1.8;
-          ball.vz += (dz / d) * 1.8;
-        }
-      }
-      ball.vx *= 1 - Math.min(1, dt * 1.6);
-      ball.vz *= 1 - Math.min(1, dt * 1.6);
-      ball.mesh.position.x += ball.vx * dt;
-      ball.mesh.position.z += ball.vz * dt;
-      const lim = ARENA - ball.r - 0.03;
-      if (Math.abs(ball.mesh.position.x) > lim) {
-        ball.mesh.position.x = Math.sign(ball.mesh.position.x) * lim;
-        ball.vx *= -0.6;
-      }
-      if (Math.abs(ball.mesh.position.z) > lim) {
-        ball.mesh.position.z = Math.sign(ball.mesh.position.z) * lim;
-        ball.vz *= -0.6;
-      }
-      ball.mesh.rotation.x += (ball.vz * dt) / ball.r;
-      ball.mesh.rotation.z -= (ball.vx * dt) / ball.r;
-    }
-    // Al volver al inicio, las pelotas regresan a su lugar.
-    if (progress < 0.05) for (const ball of balls) ball.mesh.position.lerp(ball.home, Math.min(1, dt * 2));
-
-    // Semaforo
-    const state = progress < TIMELINE.yellow ? 0 : progress < TIMELINE.green ? 1 : 2;
-    lamps.forEach((m, i) => {
-      m.emissiveIntensity = i === state ? 3.2 : 0.05;
-    });
-    signal.color.set(lampColors[state]!);
-    signal.intensity = 6;
-
-    // Camara
-    const cam = cameraAt(progress);
-    cam.pos.sub(cam.target).multiplyScalar(zoomOut).add(cam.target);
-    const sway = still ? 0 : Math.sin(t * 0.25) * 0.25;
-    camera.position.set(cam.pos.x + sway + pointer.x * 0.6, cam.pos.y + pointer.y * 0.3, cam.pos.z);
-    camera.lookAt(cam.target);
-
-    // Luces de color laten un poco
-    rimOrange.intensity = 12 + (still ? 0 : Math.sin(t * 2) * 2);
-    rimBlue.intensity = progress > TIMELINE.pop ? lerp(14, 5, seg(progress, TIMELINE.pop, TIMELINE.winner)) : 12;
-
-    renderer.render(scene, camera);
+    const winner = seg(progress, TIMELINE.pop, TIMELINE.winner + 0.04);
+    const fx = lerp((o.x + b.x) / 2, o.x, winner);
+    const fz = lerp((o.z + b.z) / 2, o.z, winner);
+    focus = [lerp(focus[0], fx, Math.min(1, dt * 4)), 0.5, lerp(focus[2], fz, Math.min(1, dt * 4))];
+    setCamera(now);
+    drawSky(now);
+    drawLights(now, false);
+    drawFloor(now);
+    drawLights(now, true);
+    drawWalls(false);
+    const bots = [
+      { s: ORANGE_BOT, pose: o, balloon: true, leds: 0.9 + (still ? 0 : 0.1 * Math.sin(t * 6)), sway: swayO },
+      { s: CYAN_BOT, pose: b, balloon: !popped, leds: popped ? 0.25 : 0.9 + (still ? 0 : 0.1 * Math.sin(t * 6.5)), sway: swayB },
+    ].sort((x, y) => project([y.pose.x, 0, y.pose.z])[2] - project([x.pose.x, 0, x.pose.z])[2]);
+    for (const bot of bots) drawRobot(bot.s, bot.pose, bot.balloon, bot.leds, bot.sway);
+    drawSparks();
+    drawPopRing(now);
+    drawWalls(true);
+    // Brillo bajo del color de quien va ganando (cian mientras pelean, naranja al ganar)
+    const tint = c2.createLinearGradient(0, H, 0, H * 0.55);
+    tint.addColorStop(0, `rgba(${popped ? ORANGE : CYAN},0.08)`);
+    tint.addColorStop(1, "rgba(0,0,0,0)");
+    c2.fillStyle = tint;
+    c2.fillRect(0, H * 0.55, W, H * 0.45);
   }
 
   function loop(now: number) {
@@ -864,6 +845,11 @@ export function createArenaScene(canvas: HTMLCanvasElement, opts: Options): Aren
   return {
     setProgress(p) {
       target = clamp(p);
+      // La primera vez (p. ej. al recargar a media pagina) salta directo, sin recorrer la pelea.
+      if (!snapped) {
+        progress = lastProgress = target;
+        snapped = true;
+      }
       if (!active) step(performance.now());
     },
     setPointer(x, y) {
@@ -882,21 +868,8 @@ export function createArenaScene(canvas: HTMLCanvasElement, opts: Options): Aren
       } else cancelAnimationFrame(raf);
     },
     dispose() {
-      cancelAnimationFrame(raf);
       active = false;
-      scene.traverse((o) => {
-        if (o instanceof THREE.Mesh || o instanceof THREE.Points || o instanceof THREE.Line) {
-          o.geometry.dispose();
-          const mats = Array.isArray(o.material) ? o.material : [o.material];
-          for (const m of mats) {
-            for (const v of Object.values(m)) if (v instanceof THREE.Texture) v.dispose();
-            m.dispose();
-          }
-        }
-      });
-      envTex.dispose();
-      pmrem.dispose();
-      renderer.dispose();
+      cancelAnimationFrame(raf);
     },
   };
 }
