@@ -83,4 +83,6 @@ precios en `backend/src/catalog.ts`, horario L–J 5–9:30 PM, V 5–10:30 PM, 
 - [x] Dirección y mapa en `/location`: arena en 255 N University Ave, Provo; clases STEAM en 1201 N 800 E, Orem
 - [x] Fotos reales en galeria, Parties, STEAM y tienda (`frontend/public/images/gallery`, lista en `site.ts`) — confirmar permiso de uso
 - [ ] Videos de la galería
+- [x] Página `/tournaments`: transmisión en vivo de YouTube y torneos pasados; lista de próximos torneos en `site.ts`
+- [ ] Poner el canal de YouTube en `site.youtube` (`channelId` que empieza con UC y `url`). No se encontró públicamente
 - [ ] Conectar el dominio `thebotspot.org` en Vercel

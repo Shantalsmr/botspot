@@ -22,6 +22,16 @@ export const site = {
     facebook: "https://www.facebook.com/p/The-Bot-Spot-61582077369646/",
     instagram: "https://www.instagram.com/botspot_ut/",
   },
+  /**
+   * Canal de YouTube donde transmiten los torneos (pagina /tournaments).
+   * PENDIENTE: poner el id del canal (empieza con "UC", se ve en YouTube Studio → Configuracion →
+   * Canal → Configuracion avanzada) y el link publico. Mientras channelId sea null, la pagina
+   * muestra "pronto" en vez del video.
+   */
+  youtube: {
+    channelId: null as string | null,
+    url: null as string | null,
+  },
   // Horario confirmado por el negocio (nov. 2026). Mantener igual a OPENING_HOURS en backend/src/catalog.ts.
   hours: [
     { days: "Mon – Thu", time: "5:00 PM – 9:30 PM" },
@@ -31,11 +41,12 @@ export const site = {
   ],
 } as const;
 
+// "Home" no va en el menu: el logo ya lleva al inicio.
 export const navLinks = [
-  { href: "/", label: "Home" },
   { href: "/parties", label: "Parties" },
   { href: "/events", label: "Events" },
   { href: "/steam", label: "STEAM" },
+  { href: "/tournaments", label: "Tournaments" },
   { href: "/shop", label: "Shop" },
   { href: "/gallery", label: "Gallery" },
   { href: "/faq", label: "FAQ" },
@@ -194,3 +205,14 @@ export const gallery: Photo[] = [
 export function photo(name: string): Photo {
   return gallery.find((p) => p.src.endsWith(`/${name}.jpg`)) ?? gallery[0]!;
 }
+
+export interface Tournament {
+  title: string;
+  /** Fecha (YYYY-MM-DD). Despues de ese dia deja de mostrarse en "proximos". */
+  date: string;
+  time: string;
+  description: string;
+}
+
+/** Proximos torneos (los agrega el negocio). Vacio = la seccion dice que pronto se anuncian. */
+export const tournaments: Tournament[] = [];
