@@ -1,17 +1,28 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/ComingSoon";
+import { CartView } from "@/components/CartView";
 import { PageHeader } from "@/components/PageHeader";
 
 export const metadata: Metadata = {
   title: "Cart",
-  description: "Review the items in your cart.",
+  robots: { index: false },
 };
 
-export default function CartPage() {
+export default async function CartPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { canceled } = await searchParams;
   return (
     <>
-      <PageHeader title="Cart">Review the items in your cart.</PageHeader>
-      <ComingSoon feature="Our online cart" />
+      <PageHeader title="Your cart" eyebrow="Almost there">
+        Review your items before checkout.
+      </PageHeader>
+      <section className="section">
+        <div className="container booking-container">
+          <CartView canceled={canceled === "1"} />
+        </div>
+      </section>
     </>
   );
 }

@@ -1,17 +1,23 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/ComingSoon";
+import { CheckoutView } from "@/components/CartView";
 import { PageHeader } from "@/components/PageHeader";
 
 export const metadata: Metadata = {
-  title: "Check Out",
-  description: "Complete your order.",
+  title: "Checkout",
+  robots: { index: false },
 };
 
 export default function CheckoutPage() {
   return (
     <>
-      <PageHeader title="Check Out">Complete your order.</PageHeader>
-      <ComingSoon feature="Online checkout" />
+      <PageHeader title="Checkout" eyebrow="Secure payment">
+        Confirm your order and pay securely with Stripe.
+      </PageHeader>
+      <section className="section">
+        <div className="container booking-container">
+          <CheckoutView />
+        </div>
+      </section>
     </>
   );
 }

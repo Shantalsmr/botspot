@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
-import { activities } from "@/content/site";
+import { activities, photo } from "@/content/site";
 
 export const metadata: Metadata = {
   title: "Parties & Activities",
@@ -14,6 +15,19 @@ export default function PartiesPage() {
       <PageHeader title="Our Activities" eyebrow="Parties">
         Explore all the fun at our downtown Provo family robot arcade.
       </PageHeader>
+
+      <section className="section">
+        <div className="container photo-strip">
+          {["party-group","family-robots","group-robots-1","kids-robots"].map((n) => {
+            const p = photo(n);
+            return (
+              <div key={n} className="photo">
+                <Image src={p.src} alt={p.alt} width={p.width} height={p.height} sizes="(max-width: 600px) 100vw, 280px" />
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       <section className="section">
         <div className="container grid grid-3">

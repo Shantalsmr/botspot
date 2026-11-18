@@ -21,6 +21,8 @@ import {
 } from "../catalog";
 import { OWNER_EMAIL, sendEmail } from "../lib/email";
 import { getStripe, isStripeConfigured } from "../lib/stripe";
+import { applyOrderSession } from "./order.service";
+import { normalizeCode, readGiftCardInTx, refundGiftCard } from "./giftcard.service";
 
 /** Tiempo que un cupo queda apartado mientras el cliente paga (Stripe exige minimo 30 min). */
 const HOLD_MIN = 30;
@@ -50,6 +52,11 @@ export interface BookingDoc {
   customerId?: string;
   /** Solicitud de cancelacion/cambio: "open" mientras los duenos la revisan. */
   requestStatus?: "open" | "done";
+  /** Gift card usada en linea y cuanto cubrio (centavos). El resto se cobra con Stripe. */
+  giftCode?: string;
+  giftCents?: number;
+  /** "giftcard" si la gift card cubrio todo (no paso por Stripe). */
+  paidWith?: "stripe" | "giftcard";
 }
 
 export interface BookingSummary {
@@ -61,6 +68,8 @@ export interface BookingSummary {
   amount: string;
   status: BookingStatus;
   email: string | null;
+  giftCode: string | null;
+  giftAmount: string | null;
 }
 
 /** Error esperado de reservas; la ruta /api lo convierte en `fail(code, message, status)`. */
@@ -133,7 +142,25 @@ export interface CreateCheckoutInput {
   players: number;
   date: string;
   time: string;
+  /** Codigo de gift card (opcional). */
+  giftCode?: string;
+  /** Datos de contacto: solo se piden si la gift card cubre todo (no hay pago en Stripe que los pida). */
+  name?: string;
+  email?: string;
+  phone?: string;
 }
+
+/** Stripe no acepta cobros menores a $0.50. */
+const STRIPE_MIN_CENTS = 50;
+
+/** Cuanto puede cubrir una gift card sin dejar un saldo menor al minimo de Stripe. */
+function giftCoverage(balance: number, total: number): number {
+  if (balance >= total) return total;
+  const remainder = total - balance;
+  return remainder >= STRIPE_MIN_CENTS ? balance : Math.max(0, total - STRIPE_MIN_CENTS);
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Aparta el cupo (transaccion en Firestore, evita sobreventa) y crea la sesion de Stripe Checkout.
@@ -161,6 +188,15 @@ export async function createBookingCheckout(
   const ref = col.doc();
   const now = Date.now();
   const amountCents = priceCents(pkg, players);
+  const giftCode = input.giftCode ? normalizeCode(input.giftCode) : null;
+  if (input.giftCode && !giftCode) {
+    throw new BookingError("invalid_gift", "That doesn't look like a Bot Spot gift card code.");
+  }
+  const contact = {
+    name: typeof input.name === "string" ? input.name.trim().slice(0, 120) : "",
+    email: (typeof input.email === "string" && input.email.trim() ? input.email.trim().slice(0, 160) : (account?.email ?? "")).toLowerCase(),
+    phone: typeof input.phone === "string" ? input.phone.trim().slice(0, 40) : "",
+  };
 
   // Evita que alguien aparte muchos horarios sin pagar.
   const mine = await col.where("clientId", "==", clientId).get();
@@ -176,7 +212,7 @@ export async function createBookingCheckout(
     );
   }
 
-  await db.runTransaction(async (tx) => {
+  const result = await db.runTransaction(async (tx) => {
     const snap = await tx.get(col.where("date", "==", input.date));
     const day = buildDay(
       input.date,
@@ -185,6 +221,22 @@ export async function createBookingCheckout(
     );
     if (!availableStarts(day, pkg, players).includes(startMin)) {
       throw new BookingError("slot_unavailable", "That time is no longer available. Please pick another one.", 409);
+    }
+    // Gift card: se lee aqui (antes de escribir) y el saldo se aparta junto con el cupo.
+    let giftCents = 0;
+    let applyGift: ((cents: number, bookingId: string) => void) | null = null;
+    if (giftCode) {
+      try {
+        const gift = await readGiftCardInTx(tx, db, giftCode);
+        giftCents = giftCoverage(gift.balanceCents, amountCents);
+        applyGift = gift.apply;
+      } catch (e) {
+        throw new BookingError("invalid_gift", e instanceof Error ? e.message : "Gift card not valid.");
+      }
+    }
+    const fullyCovered = giftCents === amountCents;
+    if (fullyCovered && (!contact.name || !EMAIL_RE.test(contact.email) || contact.phone.replace(/\D/g, "").length < 7)) {
+      throw new BookingError("contact_required", "Your gift card covers everything! Please add your name, email and phone.");
     }
     const doc: BookingDoc = {
       packageId: pkg.id,
@@ -199,9 +251,27 @@ export async function createBookingCheckout(
       createdAt: now,
       clientId,
       ...(account ? { customerId: account.id } : {}),
+      ...(giftCode && giftCents > 0 ? { giftCode, giftCents } : {}),
+      ...(fullyCovered
+        ? {
+            status: "paid" as const,
+            paidAt: now,
+            paidWith: "giftcard" as const,
+            customer: { name: contact.name, email: contact.email, phone: contact.phone },
+          }
+        : {}),
     };
+    if (applyGift && giftCents > 0) applyGift(giftCents, ref.id);
     tx.set(ref, doc);
+    return { fullyCovered, giftCents, doc };
   });
+
+  // La gift card pago todo: no hace falta Stripe.
+  if (result.fullyCovered) {
+    await notifyOwnersNewBooking(ref.id, result.doc);
+    return { url: `${origin}/thank-you?booking=${ref.id}` };
+  }
+  const chargeCents = amountCents - result.giftCents;
 
   const when = `${input.date} at ${formatTime(startMin)}`;
   try {
@@ -212,10 +282,12 @@ export async function createBookingCheckout(
           quantity: 1,
           price_data: {
             currency: "usd",
-            unit_amount: amountCents,
+            unit_amount: chargeCents,
             product_data: {
               name: `${pkg.name} · ${players} ${players === 1 ? "player" : "players"}`,
-              description: `The Bot Spot, Provo · ${when}`,
+              description: result.giftCents
+                ? `The Bot Spot, Provo · ${when} · Gift card ${giftCode} applied: -${formatPrice(result.giftCents)}`
+                : `The Bot Spot, Provo · ${when}`,
             },
           },
         },
@@ -237,7 +309,8 @@ export async function createBookingCheckout(
     await ref.update({ stripeSessionId: session.id });
     return { url: session.url };
   } catch (error) {
-    // Si Stripe falla, se libera el cupo.
+    // Si Stripe falla, se libera el cupo y se devuelve el saldo de la gift card.
+    if (giftCode && result.giftCents > 0) await refundGiftCard(giftCode, result.giftCents, ref.id);
     await ref.delete();
     throw error;
   }
@@ -266,13 +339,19 @@ async function applySession(session: Stripe.Checkout.Session): Promise<string | 
         stripePaymentIntentId:
           typeof session.payment_intent === "string" ? session.payment_intent : (session.payment_intent?.id ?? null),
         customer,
+        paidWith: "stripe",
       });
       return { ...current, customer };
     });
     if (newlyPaid) await notifyOwnersNewBooking(bookingId, newlyPaid);
   } else if (session.status === "expired") {
     const snap = await ref.get();
-    if (snap.exists && (snap.data() as BookingDoc).status === "pending") await ref.update({ status: "expired" });
+    const b = snap.data() as BookingDoc | undefined;
+    if (snap.exists && b?.status === "pending") {
+      await ref.update({ status: "expired" });
+      // No se pago: el saldo apartado vuelve a la gift card.
+      if (b.giftCode && b.giftCents) await refundGiftCard(b.giftCode, b.giftCents, bookingId);
+    }
   }
   return bookingId;
 }
@@ -288,7 +367,7 @@ async function notifyOwnersNewBooking(id: string, b: BookingDoc): Promise<void> 
 ${pkg}
 Date: ${b.date} at ${formatTime(b.startMin)}
 Players: ${b.players}
-Paid: ${formatPrice(b.amountCents)}
+Paid: ${formatPrice(b.amountCents)}${b.giftCents ? ` (gift card ${b.giftCode}: ${formatPrice(b.giftCents)})` : ""}
 
 Customer: ${b.customer?.name ?? "-"}
 Email: ${b.customer?.email ?? "-"}
@@ -296,6 +375,29 @@ Phone: ${b.customer?.phone ?? "-"}
 
 Confirmation #: ${id}`,
   });
+}
+
+function toBookingSummary(id: string, b: BookingDoc): BookingSummary {
+  return {
+    id,
+    packageName: getPackage(b.packageId)?.name ?? b.packageId,
+    date: b.date,
+    time: formatTime(b.startMin),
+    players: b.players,
+    amount: formatPrice(b.amountCents),
+    status: b.status,
+    email: b.customer?.email ?? null,
+    giftCode: b.giftCode ?? null,
+    giftAmount: b.giftCents ? formatPrice(b.giftCents) : null,
+  };
+}
+
+/** Usado por /thank-you cuando la gift card pago todo (no hay sesion de Stripe). */
+export async function getGiftPaidBooking(id: string): Promise<BookingSummary | null> {
+  if (!isDatabaseConfigured() || !/^[A-Za-z0-9]{10,40}$/.test(id)) return null;
+  const snap = await getDb().collection(COLLECTIONS.bookings).doc(id).get();
+  const b = snap.data() as BookingDoc | undefined;
+  return b && b.paidWith === "giftcard" ? toBookingSummary(snap.id, b) : null;
 }
 
 /** Usado por /thank-you: confirma el pago con Stripe y devuelve el resumen. */
@@ -306,17 +408,7 @@ export async function confirmBookingFromSession(sessionId: string): Promise<Book
   if (!bookingId) return null;
   const snap = await getDb().collection(COLLECTIONS.bookings).doc(bookingId).get();
   if (!snap.exists) return null;
-  const b = snap.data() as BookingDoc;
-  return {
-    id: snap.id,
-    packageName: getPackage(b.packageId)?.name ?? b.packageId,
-    date: b.date,
-    time: formatTime(b.startMin),
-    players: b.players,
-    amount: formatPrice(b.amountCents),
-    status: b.status,
-    email: b.customer?.email ?? null,
-  };
+  return toBookingSummary(snap.id, snap.data() as BookingDoc);
 }
 
 /** Webhook de Stripe: verifica la firma y actualiza la reserva. */
@@ -335,6 +427,8 @@ export async function handleStripeWebhook(rawBody: string, signature: string | n
     event.type === "checkout.session.async_payment_succeeded" ||
     event.type === "checkout.session.expired"
   ) {
+    // El mismo webhook sirve para reservas (metadata.bookingId) y pedidos de la tienda (metadata.orderId).
     await applySession(event.data.object);
+    await applyOrderSession(event.data.object);
   }
 }

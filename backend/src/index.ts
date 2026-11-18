@@ -51,3 +51,31 @@ export {
   type AdminRequest,
   type CustomerBooking,
 } from "./services/booking-request.service";
+export {
+  OrderError,
+  confirmOrderFromSession,
+  createOrderCheckout,
+  listPaidOrders,
+  type CreateOrderInput,
+  type OrderLine,
+  type OrderSummary,
+} from "./services/order.service";
+export { getGiftPaidBooking } from "./services/booking.service";
+export {
+  GiftCardError,
+  checkGiftCardForBooking,
+  lookupGiftCard,
+  redeemInStore,
+  type GiftCardSummary,
+  type GiftMovement,
+  type IssuedCode,
+} from "./services/giftcard.service";
+export {
+  LOCATIONS,
+  TerminalError,
+  addTerminalSale,
+  deleteTerminalSale,
+  type LocationId,
+  type TerminalSale,
+} from "./services/terminal.service";
+export type { RevenueSource, SourceTotals } from "./services/admin.service";

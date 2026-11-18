@@ -60,15 +60,24 @@ precios en `backend/src/catalog.ts`, horario L–J 5–9:30 PM, V 5–10:30 PM, 
 
 ## Fases siguientes (sin fecha todavía)
 
-### Fase 2 – Formulario de contacto
-- [ ] Formulario en `/contact` que guarde el mensaje en Firestore y avise por correo
+### ✅ Fase 2 – Formulario de contacto
+- [x] Formulario en `/contact` (tipo `contact` en `inquiries`); los mensajes salen en `/admin`
+- [ ] Aviso por correo de cada mensaje (cuando Resend este configurado)
 
-### Fase 3 – Tienda y carrito
-- [ ] Productos y paquetes guardados en Firestore (gorras, snacks, paquetes de fiesta)
-- [ ] Carrito en `/cart` y pedido en `/checkout`
-- [ ] Pagos en línea (por definir: Stripe, Square...)
+### ✅ Fase 3 – Tienda y carrito (nov. 2026)
+- [x] Catalogo en `backend/src/shop.ts` con los precios del menu del local (tickets 2/4/10/16, piñatas, Donut Surprise, camiseta $29) + gift cards $25/$50/$100 (montos por confirmar)
+- [x] Carrito en el navegador (`/cart`), resumen y pago con Stripe (`/checkout` → `/order-confirmed`), coleccion `orders`
+- [x] Pedidos y ventas de la tienda en `/admin`; el mismo webhook de Stripe confirma pedidos y reservas
+- [ ] Fotos reales de los productos (`public/images/shop/`)
+- [ ] Editor de productos en `/admin` para que los duenos los cambien sin programador
+- [x] Codigos de gift card y tickets (`giftCards`): se generan al pagar, se ven en `/order-confirmed` y se envian por correo (con Resend)
+- [x] Canje en el local desde `/admin` (dolares o tickets) y uso de gift cards al reservar en linea (descuenta del total; si cubre todo no pasa por Stripe)
+- [x] Panel: ingresos separados por origen (reservas en linea, tienda en linea, terminal Clover) y por ubicacion en las ventas de terminal
+- [ ] Clover: hoy se registra a mano en `/admin`; si cambian a Stripe Terminal se puede leer solo
+- [ ] Usar gift cards tambien para pagar en la tienda en linea
 
 ### Fase 4 – Contenido y extras
-- [ ] Dirección exacta y mapa en `/location`
-- [ ] Más fotos y los videos de la galería
+- [x] Dirección y mapa en `/location`: arena en 255 N University Ave, Provo; clases STEAM en 1201 N 800 E, Orem
+- [x] Fotos reales en galeria, Parties, STEAM y tienda (`frontend/public/images/gallery`, lista en `site.ts`) — confirmar permiso de uso
+- [ ] Videos de la galería
 - [ ] Conectar el dominio `thebotspot.org` en Vercel

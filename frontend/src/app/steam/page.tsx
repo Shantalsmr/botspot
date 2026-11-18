@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { InquiryForm } from "@/components/InquiryForm";
 import { PageHeader } from "@/components/PageHeader";
+import { photo, site } from "@/content/site";
 
 export const metadata: Metadata = {
   title: "STEAM Program",
@@ -19,9 +21,21 @@ export default function SteamPage() {
   return (
     <>
       <PageHeader title="STEAM Program" eyebrow="Coming soon">
-        Hands-on robotics classes where students design, build and battle their own robot. Classes are held at a
-        separate location. Join the waitlist and we&apos;ll let you know when registration opens.
+        Hands-on robotics classes where students design, build and battle their own robot. Classes are held at
+        our Orem location, {site.steamAddress}. Join the waitlist and we&apos;ll let you know when registration opens.
       </PageHeader>
+      <section className="section">
+        <div className="container photo-strip">
+          {["robot-build","robot-shelf","robot-closeup"].map((n) => {
+            const p = photo(n);
+            return (
+              <div key={n} className="photo">
+                <Image src={p.src} alt={p.alt} width={p.width} height={p.height} sizes="(max-width: 600px) 100vw, 380px" />
+              </div>
+            );
+          })}
+        </div>
+      </section>
       <section className="section">
         <div className="container">
           <ol className="timeline">

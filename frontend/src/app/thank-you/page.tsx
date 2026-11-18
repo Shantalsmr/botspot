@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { confirmBookingFromSession, type BookingSummary } from "@botspot/backend";
+import { confirmBookingFromSession, getGiftPaidBooking, type BookingSummary } from "@botspot/backend";
 import { PageHeader } from "@/components/PageHeader";
 
 export const metadata: Metadata = {
@@ -16,14 +16,14 @@ export default async function ThankYouPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { session_id } = await searchParams;
+  const { session_id, booking: giftBookingId } = await searchParams;
   let booking: BookingSummary | null = null;
-  if (typeof session_id === "string") {
-    try {
-      booking = await confirmBookingFromSession(session_id);
-    } catch (error) {
-      console.error("[thank-you]", error);
-    }
+  try {
+    if (typeof session_id === "string") booking = await confirmBookingFromSession(session_id);
+    // Reserva pagada completa con gift card (no paso por Stripe).
+    else if (typeof giftBookingId === "string") booking = await getGiftPaidBooking(giftBookingId);
+  } catch (error) {
+    console.error("[thank-you]", error);
   }
   const paid = booking?.status === "paid";
 
@@ -48,8 +48,16 @@ export default async function ThankYouPage({
                 <dd>{booking.time}</dd>
                 <dt>Players</dt>
                 <dd>{booking.players}</dd>
-                <dt>Total paid</dt>
+                <dt>Total</dt>
                 <dd>{booking.amount}</dd>
+                {booking.giftCode ? (
+                  <>
+                    <dt>Gift card</dt>
+                    <dd>
+                      {booking.giftCode} · −{booking.giftAmount}
+                    </dd>
+                  </>
+                ) : null}
                 <dt>Confirmation #</dt>
                 <dd>{booking.id}</dd>
               </dl>

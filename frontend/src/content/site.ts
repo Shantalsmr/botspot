@@ -14,6 +14,10 @@ export const site = {
   phoneLanguages: "English & Spanish",
   pricePerPerson: 25,
   city: "Downtown Provo, Utah",
+  /** Direccion de la arena (robots, arcade, fiestas). Se usa en /location, el mapa y el pie de pagina. */
+  address: "255 N University Ave, Provo, UT 84604" as string | null,
+  /** Lugar de las clases del programa STEAM (es otro sitio, en Orem). */
+  steamAddress: "1201 N 800 E, Orem, UT 84097",
   social: {
     facebook: "https://www.facebook.com/p/The-Bot-Spot-61582077369646/",
     instagram: "https://www.instagram.com/botspot_ut/",
@@ -32,6 +36,7 @@ export const navLinks = [
   { href: "/parties", label: "Parties" },
   { href: "/events", label: "Events" },
   { href: "/steam", label: "STEAM" },
+  { href: "/shop", label: "Shop" },
   { href: "/gallery", label: "Gallery" },
   { href: "/faq", label: "FAQ" },
   { href: "/location", label: "Location" },
@@ -144,4 +149,48 @@ export const promotions: Promotion[] = [];
 
 export function telHref(phone: string): string {
   return `tel:+1${phone.replace(/\D/g, "")}`;
+}
+
+export interface Photo {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+}
+
+/**
+ * Fotos reales del local (de Google Maps, optimizadas en /public/images/gallery).
+ * Antes de publicar, confirmar con el negocio que se pueden usar (algunas las subieron clientes).
+ */
+export const gallery: Photo[] = [
+  { src: "/images/gallery/arena-battle-crowd.jpg", alt: "Friends watching a robot battle through the arena glass", width: 1600, height: 900 },
+  { src: "/images/gallery/group-robots-1.jpg", alt: "A group of teens holding their battle robots", width: 1600, height: 1200 },
+  { src: "/images/gallery/robot-closeup.jpg", alt: "Close-up of a battle robot with glowing eyes", width: 1200, height: 1600 },
+  { src: "/images/gallery/battle-kids.jpg", alt: "A dad and son driving robots in the arena", width: 1600, height: 1200 },
+  { src: "/images/gallery/arena-glow.jpg", alt: "Colorful balls and robots inside the lit-up arena", width: 1600, height: 1200 },
+  { src: "/images/gallery/friends-robots.jpg", alt: "Two friends showing off their robots", width: 1200, height: 1600 },
+  { src: "/images/gallery/family-robots.jpg", alt: "A family posing with robots under The Bot Spot sign", width: 1600, height: 1349 },
+  { src: "/images/gallery/arena-red-lights.jpg", alt: "Robots battling under red arena lights", width: 1600, height: 1200 },
+  { src: "/images/gallery/kids-driving.jpg", alt: "Kids driving robots with game controllers", width: 1205, height: 1600 },
+  { src: "/images/gallery/arena-night.jpg", alt: "A full arena of players during a night battle", width: 1600, height: 1200 },
+  { src: "/images/gallery/party-group.jpg", alt: "A party group holding glowing robots", width: 1200, height: 1600 },
+  { src: "/images/gallery/arena-overview.jpg", alt: "The robot battle arena from above", width: 1600, height: 1200 },
+  { src: "/images/gallery/group-robots-2.jpg", alt: "Friends with their robots by the arena", width: 1200, height: 1600 },
+  { src: "/images/gallery/kids-arena.jpg", alt: "Kids watching robots battle inside the arena", width: 1600, height: 1200 },
+  { src: "/images/gallery/arena-action.jpg", alt: "Robots chasing balls on the arena floor", width: 1200, height: 1600 },
+  { src: "/images/gallery/team-arena.jpg", alt: "A team event at The Bot Spot", width: 1600, height: 1200 },
+  { src: "/images/gallery/kids-robots.jpg", alt: "Kids showing their robots with a parent", width: 1205, height: 1600 },
+  { src: "/images/gallery/arena-blue.jpg", alt: "A robot under blue arena lights", width: 1600, height: 1205 },
+  { src: "/images/gallery/arcade-hall.jpg", alt: "The arcade hall with a robot arena table", width: 1200, height: 1600 },
+  { src: "/images/gallery/air-hockey.jpg", alt: "Players at the arcade games", width: 1600, height: 826 },
+  { src: "/images/gallery/arena-spectators.jpg", alt: "Spectators around the arena", width: 1600, height: 1200 },
+  { src: "/images/gallery/new-robot.jpg", alt: "Two guests excited about their new robot", width: 1200, height: 1600 },
+  { src: "/images/gallery/staff-team.jpg", alt: "The Bot Spot team", width: 1200, height: 1600 },
+  { src: "/images/gallery/robot-build.jpg", alt: "A battle robot being built on the workbench", width: 1200, height: 1600 },
+  { src: "/images/gallery/robot-shelf.jpg", alt: "Battle robots on display by The Bot Spot banner", width: 1200, height: 1600 },
+  { src: "/images/gallery/arena-floor.jpg", alt: "The arena floor with robots and balls", width: 1200, height: 1600 },
+];
+
+export function photo(name: string): Photo {
+  return gallery.find((p) => p.src.endsWith(`/${name}.jpg`)) ?? gallery[0]!;
 }

@@ -1,7 +1,7 @@
 import "server-only";
 import { COLLECTIONS, getDb, isDatabaseConfigured } from "@botspot/database";
 
-export type InquiryType = "corporate" | "steam";
+export type InquiryType = "corporate" | "steam" | "contact";
 
 export interface InquiryInput {
   type: string;
@@ -53,7 +53,7 @@ export async function createInquiry(input: InquiryInput, clientId: string): Prom
   // Bot: se responde "ok" sin guardar nada.
   if (clean(input.website, 200)) return { id: "ok" };
 
-  const type = input.type === "corporate" || input.type === "steam" ? input.type : null;
+  const type = input.type === "corporate" || input.type === "steam" || input.type === "contact" ? input.type : null;
   if (!type) throw new InquiryError("invalid_type", "Invalid form.");
 
   const doc: InquiryDoc = {
@@ -70,7 +70,11 @@ export async function createInquiry(input: InquiryInput, clientId: string): Prom
 
   if (!doc.name) throw new InquiryError("invalid_name", "Please enter your name.");
   if (!EMAIL_RE.test(doc.email)) throw new InquiryError("invalid_email", "Please enter a valid email.");
-  if (doc.phone.replace(/\D/g, "").length < 7) throw new InquiryError("invalid_phone", "Please enter a valid phone number.");
+  // En el formulario de contacto el telefono es opcional.
+  if ((type !== "contact" || doc.phone) && doc.phone.replace(/\D/g, "").length < 7) {
+    throw new InquiryError("invalid_phone", "Please enter a valid phone number.");
+  }
+  if (type === "contact" && !doc.message) throw new InquiryError("invalid_message", "Please write your message.");
   if (type === "corporate" && (!doc.eventAddress || !doc.eventType)) {
     throw new InquiryError("invalid_event", "Please tell us the event address and type.");
   }

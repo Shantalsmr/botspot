@@ -9,7 +9,7 @@ export function SiteFooter() {
       <div className="container footer-grid">
         <div>
           <p className="footer-title">{site.name}</p>
-          <p className="muted">{site.city}</p>
+          <p className="muted">{site.address ?? site.city}</p>
           <p className="muted">${site.pricePerPerson} per person</p>
         </div>
         <div>

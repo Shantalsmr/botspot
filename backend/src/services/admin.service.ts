@@ -5,6 +5,8 @@ import { addDays, formatPrice, formatTime, getPackage, nowInProvo } from "../cat
 import type { BookingDoc } from "./booking.service";
 import { listOpenRequests, type AdminRequest } from "./booking-request.service";
 import { listInquiries, type InquirySummary } from "./inquiry.service";
+import { listPaidOrders, type OrderSummary } from "./order.service";
+import { listTerminalSales, type TerminalSale } from "./terminal.service";
 
 /**
  * Panel /admin para los duenos: una sola contrasena (ADMIN_PASSWORD) y una cookie firmada.
@@ -97,25 +99,42 @@ export interface AdminBooking {
   phone: string | null;
 }
 
-export interface DayRevenue {
-  date: string;
-  cents: number;
+/** De donde viene el dinero. */
+export type RevenueSource = "bookings" | "shop" | "terminal";
+
+export interface SourceTotals {
   bookings: number;
+  shop: number;
+  terminal: number;
+  total: number;
+}
+
+export interface DayRevenue extends SourceTotals {
+  date: string;
+  /** Reservas pagadas ese dia. */
+  bookingCount: number;
+  /** Pedidos de la tienda pagados ese dia. */
+  orderCount: number;
 }
 
 export interface AdminDashboard {
   today: string;
-  revenueTodayCents: number;
-  revenueWeekCents: number;
-  revenueMonthCents: number;
+  /** Ingresos (centavos) por origen: hoy, ultimos 7 dias y este mes. */
+  todayTotals: SourceTotals;
+  weekTotals: SourceTotals;
+  monthTotals: SourceTotals;
   bookingsToday: number;
   playersToday: number;
-  /** Ingresos de los ultimos 30 dias, por dia de pago (hora de Provo). */
+  /** Ingresos de los ultimos 30 dias, por dia de pago (hora de Provo) y origen. */
   daily: DayRevenue[];
   upcoming: AdminBooking[];
   /** Solicitudes de cancelacion/cambio abiertas. */
   requests: AdminRequest[];
   inquiries: InquirySummary[];
+  /** Ultimos pedidos pagados de la tienda. */
+  orders: OrderSummary[];
+  /** Ventas de la terminal (Clover) de este mes y los ultimos 30 dias. */
+  terminalSales: TerminalSale[];
 }
 
 function provoDate(ms: number): string {
@@ -136,35 +155,63 @@ function toAdminBooking(id: string, b: BookingDoc): AdminBooking {
   };
 }
 
-/** Resumen para los duenos: ingresos por dia, reservas de hoy y proximas, y formularios. */
+const emptyTotals = (): SourceTotals => ({ bookings: 0, shop: 0, terminal: 0, total: 0 });
+
+/** Resumen para los duenos: ingresos por origen y por dia, reservas de hoy y proximas, y formularios. */
 export async function getAdminDashboard(): Promise<AdminDashboard> {
   const today = nowInProvo().date;
   const monthStart = `${today.slice(0, 8)}01`;
   const weekStart = addDays(today, -6);
   const from30 = addDays(today, -29);
 
-  const snap = await getDb().collection(COLLECTIONS.bookings).where("status", "==", "paid").get();
-  const paid = snap.docs.map((d) => ({ id: d.id, b: d.data() as BookingDoc }));
-
   const byDay = new Map<string, DayRevenue>();
   for (let i = 0; i < 30; i++) {
     const d = addDays(from30, i);
-    byDay.set(d, { date: d, cents: 0, bookings: 0 });
+    byDay.set(d, { date: d, ...emptyTotals(), bookingCount: 0, orderCount: 0 });
   }
-  let revenueTodayCents = 0;
-  let revenueWeekCents = 0;
-  let revenueMonthCents = 0;
-  for (const { b } of paid) {
-    const day = provoDate(b.paidAt ?? b.createdAt);
-    if (day === today) revenueTodayCents += b.amountCents;
-    if (day >= weekStart) revenueWeekCents += b.amountCents;
-    if (day >= monthStart) revenueMonthCents += b.amountCents;
+  const todayTotals = emptyTotals();
+  const weekTotals = emptyTotals();
+  const monthTotals = emptyTotals();
+
+  /** Suma `cents` al dia y a los totales que correspondan. */
+  function add(day: string, source: RevenueSource, cents: number): DayRevenue | undefined {
+    for (const [from, totals] of [
+      [today, todayTotals],
+      [weekStart, weekTotals],
+      [monthStart, monthTotals],
+    ] as const) {
+      if (day >= from) {
+        totals[source] += cents;
+        totals.total += cents;
+      }
+    }
     const slot = byDay.get(day);
     if (slot) {
-      slot.cents += b.amountCents;
-      slot.bookings += 1;
+      slot[source] += cents;
+      slot.total += cents;
     }
+    return slot;
   }
+
+  // Reservas en linea: cuenta lo cobrado con tarjeta (la parte pagada con gift card ya se conto
+  // cuando se vendio la gift card en la tienda).
+  const snap = await getDb().collection(COLLECTIONS.bookings).where("status", "==", "paid").get();
+  const paid = snap.docs.map((d) => ({ id: d.id, b: d.data() as BookingDoc }));
+  for (const { b } of paid) {
+    const slot = add(provoDate(b.paidAt ?? b.createdAt), "bookings", b.amountCents - (b.giftCents ?? 0));
+    if (slot) slot.bookingCount += 1;
+  }
+
+  // Tienda en linea.
+  const orders = await listPaidOrders();
+  for (const o of orders) {
+    const slot = add(provoDate(o.paidAt ?? o.createdAt), "shop", o.amountCents);
+    if (slot) slot.orderCount += 1;
+  }
+
+  // Terminal del local (registrada a mano).
+  const terminalSales = await listTerminalSales(monthStart < from30 ? monthStart : from30);
+  for (const s of terminalSales) add(s.date, "terminal", s.amountCents);
 
   const upcomingDocs = paid
     .filter(({ b }) => b.date >= today && b.date <= addDays(today, 14))
@@ -173,14 +220,16 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
 
   return {
     today,
-    revenueTodayCents,
-    revenueWeekCents,
-    revenueMonthCents,
+    todayTotals,
+    weekTotals,
+    monthTotals,
     bookingsToday: todays.length,
     playersToday: todays.reduce((n, { b }) => n + b.players, 0),
     daily: [...byDay.values()],
     upcoming: upcomingDocs.map(({ id, b }) => toAdminBooking(id, b)),
     requests: await listOpenRequests(),
     inquiries: await listInquiries(50),
+    orders: orders.slice(0, 30),
+    terminalSales,
   };
 }

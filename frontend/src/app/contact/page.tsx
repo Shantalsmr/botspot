@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { InquiryForm } from "@/components/InquiryForm";
 import { PageHeader } from "@/components/PageHeader";
 import { site, telHref } from "@/content/site";
 
@@ -48,15 +49,13 @@ export default function ContactPage() {
 
       <section className="section section-alt">
         <div className="container">
-          <h2>Plan your battle</h2>
+          <h2>Send us a message</h2>
           <p className="muted">
             Want to book a robot battle party, organize a group event, or ask a quick question? Send us a message
             and our team will help you line up the details for an epic Bot Spot experience.
           </p>
+          <InquiryForm type="contact" />
           <div className="actions">
-            <a className="btn btn-primary" href={`mailto:${site.email}`}>
-              Send us an email
-            </a>
             <a className="btn btn-outline" href={site.social.facebook} target="_blank" rel="noopener noreferrer">
               Facebook
             </a>

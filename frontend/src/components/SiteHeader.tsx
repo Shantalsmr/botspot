@@ -5,10 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { navLinks, site } from "@/content/site";
+import { useCart } from "./Cart";
 
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { count } = useCart();
 
   return (
     <header className="site-header">
@@ -53,6 +55,15 @@ export function SiteHeader() {
             onClick={() => setOpen(false)}
           >
             <span aria-hidden="true">👤</span> My account
+          </Link>
+          <Link
+            href="/cart"
+            className="account-link cart-link"
+            aria-current={pathname === "/cart" ? "page" : undefined}
+            onClick={() => setOpen(false)}
+          >
+            <span aria-hidden="true">🛒</span> Cart
+            {count > 0 ? <span className="cart-count">{count}</span> : null}
           </Link>
           <Link href="/book-appointment" className="btn btn-primary" onClick={() => setOpen(false)}>
             🤖 Book now

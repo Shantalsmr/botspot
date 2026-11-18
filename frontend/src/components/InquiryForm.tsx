@@ -4,8 +4,8 @@ import { useState } from "react";
 
 type ApiResponse = { ok: true; data: { id: string } } | { ok: false; error: { code: string; message: string } };
 
-/** Formulario de eventos corporativos (`corporate`) o lista de espera STEAM (`steam`). */
-export function InquiryForm({ type }: { type: "corporate" | "steam" }) {
+/** Formulario de eventos corporativos (`corporate`), lista de espera STEAM (`steam`) o contacto (`contact`). */
+export function InquiryForm({ type }: { type: "corporate" | "steam" | "contact" }) {
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -34,11 +34,15 @@ export function InquiryForm({ type }: { type: "corporate" | "steam" }) {
   if (status === "sent") {
     return (
       <div className="card form-success" role="status">
-        <h3>{type === "steam" ? "You're on the list!" : "Thanks! We got your request."}</h3>
+        <h3>
+          {type === "steam" ? "You're on the list!" : type === "contact" ? "Message sent!" : "Thanks! We got your request."}
+        </h3>
         <p className="muted">
           {type === "steam"
             ? "We'll let you know as soon as the STEAM Program opens."
-            : "We'll contact you soon with a custom quote for your event."}
+            : type === "contact"
+              ? "Thanks for reaching out. We usually reply within one business day."
+              : "We'll contact you soon with a custom quote for your event."}
         </p>
       </div>
     );
@@ -56,8 +60,8 @@ export function InquiryForm({ type }: { type: "corporate" | "steam" }) {
           <input name="email" type="email" autoComplete="email" required maxLength={160} />
         </label>
         <label className="field">
-          <span>Phone</span>
-          <input name="phone" type="tel" autoComplete="tel" required maxLength={40} />
+          <span>Phone{type === "contact" ? " (optional)" : ""}</span>
+          <input name="phone" type="tel" autoComplete="tel" required={type !== "contact"} maxLength={40} />
         </label>
       </div>
       {type === "corporate" ? (
@@ -87,6 +91,12 @@ export function InquiryForm({ type }: { type: "corporate" | "steam" }) {
           </label>
         </>
       ) : null}
+      {type === "contact" ? (
+        <label className="field">
+          <span>Message</span>
+          <textarea name="message" rows={5} required maxLength={2000} placeholder="How can we help?" />
+        </label>
+      ) : null}
       {/* Campo trampa para bots: oculto para personas */}
       <label className="hp" aria-hidden="true">
         Website
@@ -99,7 +109,13 @@ export function InquiryForm({ type }: { type: "corporate" | "steam" }) {
       ) : null}
       <div className="actions">
         <button type="submit" className="btn btn-primary" disabled={status === "sending"}>
-          {status === "sending" ? "Sending…" : type === "steam" ? "Join the waitlist" : "Request a quote"}
+          {status === "sending"
+            ? "Sending…"
+            : type === "steam"
+              ? "Join the waitlist"
+              : type === "contact"
+                ? "Send message"
+                : "Request a quote"}
         </button>
       </div>
     </form>

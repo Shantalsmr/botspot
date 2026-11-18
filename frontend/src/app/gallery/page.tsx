@@ -1,17 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { PageHeader } from "@/components/PageHeader";
+import { gallery } from "@/content/site";
 
 export const metadata: Metadata = {
   title: "Gallery",
   description: "See the fun in every visit: robot battles, classic games and nonstop entertainment.",
 };
-
-const photos = [
-  { src: "/images/arena-crowd.jpg", alt: "Crowd cheering during a robot battle", width: 1600, height: 1200 },
-  { src: "/images/arena.jpg", alt: "Robot battle arena", width: 1600, height: 900 },
-  { src: "/images/hero-logo.jpg", alt: "The Bot Spot logo", width: 1584, height: 672 },
-];
 
 export default function GalleryPage() {
   return (
@@ -23,15 +18,16 @@ export default function GalleryPage() {
       </PageHeader>
 
       <section className="section">
-        <div className="container grid grid-2">
-          {photos.map((photo) => (
-            <div key={photo.src} className="photo">
+        <div className="container masonry">
+          {gallery.map((p, i) => (
+            <div key={p.src} className="photo">
               <Image
-                src={photo.src}
-                alt={photo.alt}
-                width={photo.width}
-                height={photo.height}
-                sizes="(max-width: 900px) 100vw, 560px"
+                src={p.src}
+                alt={p.alt}
+                width={p.width}
+                height={p.height}
+                sizes="(max-width: 600px) 100vw, (max-width: 1000px) 50vw, 380px"
+                priority={i < 3}
               />
             </div>
           ))}

@@ -1,19 +1,23 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/ComingSoon";
 import { PageHeader } from "@/components/PageHeader";
+import { ShopCatalog } from "@/components/ShopCatalog";
 
 export const metadata: Metadata = {
   title: "Shop",
-  description: "Pick your perfect fun package at The Bot Spot.",
+  description: "Gift cards, game tickets, party extras and merch from The Bot Spot in Provo, Utah.",
 };
 
 export default function ShopPage() {
   return (
     <>
-      <PageHeader title="Shop" eyebrow="Packages">
-        Pick your perfect fun package.
+      <PageHeader title="Shop" eyebrow="Gifts & gear">
+        Gift cards, game tickets, party extras and Bot Spot merch. Pay online in seconds.
       </PageHeader>
-      <ComingSoon feature="Our online shop" />
+      <section className="section">
+        <div className="container">
+          <ShopCatalog />
+        </div>
+      </section>
     </>
   );
 }

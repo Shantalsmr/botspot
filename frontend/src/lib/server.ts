@@ -6,6 +6,8 @@ import {
   BookingError,
   CUSTOMER_COOKIE,
   CUSTOMER_SESSION_MAX_AGE,
+  GiftCardError,
+  TerminalError,
   InquiryError,
   RequestError,
   fail,
@@ -55,7 +57,9 @@ export function errorResponse(error: unknown, tag: string): Response {
     error instanceof RequestError ||
     error instanceof BookingError ||
     error instanceof InquiryError ||
-    error instanceof AdminError
+    error instanceof AdminError ||
+    error instanceof GiftCardError ||
+    error instanceof TerminalError
   ) {
     return fail(error.code, error.message, error.status);
   }

@@ -56,6 +56,10 @@ Flujo obligatorio: **`frontend` (página o `app/api/*/route.ts`) → `backend` (
 - **Cuentas de clientes** (`customer.service.ts`): correo + contraseña (scrypt), cookie firmada (`lib/session.ts`),
   id del documento = hash del correo. Solicitudes de cambio en `booking-request.service.ts`. Correos en `lib/email.ts`
   (Resend; si falta `RESEND_API_KEY` no se envía nada). Helpers de sesión para rutas: `frontend/src/lib/server.ts`.
+- **Tienda** (`backend/src/shop.ts`, importable como `@botspot/backend/shop`): carrito en el navegador (`components/Cart.tsx`),
+  pedidos en `order.service.ts` (coleccion `orders`). Gift cards y tickets en `giftcard.service.ts` (coleccion `giftCards`,
+  id = codigo `BOT-XXXX-XXXX`); se canjean en `/admin` o al reservar. Ventas de la terminal Clover (manuales) en
+  `terminal.service.ts`. El webhook de Stripe atiende reservas (`metadata.bookingId`) y pedidos (`metadata.orderId`).
 - **Variables de entorno** (`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`) se leen en
   `database/src/env.ts`; si faltan, el sitio sigue funcionando sin base de datos. Local: `frontend/.env.local`.
 - **Datos del negocio** (teléfonos, horarios, precio, FAQ, actividades, nav) viven en `frontend/src/content/site.ts`;

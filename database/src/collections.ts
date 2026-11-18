@@ -16,6 +16,12 @@ export const COLLECTIONS = {
   customerLoginAttempts: "customerLoginAttempts",
   /** Enlaces para crear contrasena nueva (id = hash del token). */
   passwordResets: "passwordResets",
+  /** Pedidos de la tienda en linea (gift cards, pases, merch). */
+  orders: "orders",
+  /** Gift cards y paquetes de tickets (id = codigo, p. ej. BOT-7KQ2-M9XP). */
+  giftCards: "giftCards",
+  /** Ventas cobradas en la terminal del local (Clover), registradas a mano en /admin. */
+  terminalSales: "terminalSales",
   /** Solicitudes de cancelacion o cambio de una reserva. */
   bookingRequests: "bookingRequests",
   /** Documentos internos, p. ej. la prueba de conexion. */
