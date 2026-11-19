@@ -68,7 +68,7 @@ Flujo obligatorio: **`frontend` (página o `app/api/*/route.ts`) → `backend` (
   no hardcodearlos en las páginas.
 - Alias `@/*` → `frontend/src/*`. Estilos globales en `frontend/src/app/globals.css` (sin Tailwind/CSS modules).
 - Componentes compartidos en `frontend/src/components/` (`SiteHeader`, `SiteFooter`, `PageHeader`, `ComingSoon`).
-- Funciones aún no construidas usan `<ComingSoon feature="..." />` (book-appointment, my-bookings, cart, checkout, shop).
+- Funciones aún no construidas pueden usar `<ComingSoon feature="..." />` (hoy ninguna página lo usa).
 - TypeScript estricto con `noUncheckedIndexedAccess` (`tsconfig.base.json`).
 - URLs viejas de WordPress se redirigen en `next.config.ts` (`redirects()`).
 
@@ -79,7 +79,9 @@ Flujo obligatorio: **`frontend` (página o `app/api/*/route.ts`) → `backend` (
 
 ## Plan de trabajo
 
-Ver `ROADMAP.md`. Fase 0 (base) lista; **en curso: Fase 1 – Reservas con pago Stripe** (`/book-appointment`, `/thank-you`,
-`/my-bookings`, colección `bookings`). Avanzar una fase a la vez: terminar, probar y desplegar antes de seguir.
+Ver `ROADMAP.md`. Fases 0–3 listas (base, reservas con Stripe, contacto, tienda y gift cards) y rediseño del inicio en `main`.
+Reservas probadas de punta a punta (nov. 2026). El sitio se presentó al cliente (David Sopetti) el 18 nov. 2026 y le gustó;
+**en curso: aplicar su feedback** (y el de Jerome y otro ingeniero). Falta la configuración de producción (variables en Vercel,
+webhook de Stripe, Resend, claves live de Stripe, dominio). Avanzar un cambio a la vez: terminar, probar y desplegar antes de seguir.
 
 La copia original de WordPress está en el historial de git (commit `14ef4ba`).

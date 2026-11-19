@@ -16,7 +16,14 @@ Vamos a avanzar **poco a poco**, una función a la vez. Cada fase se termina, se
 
 ---
 
-## 🚧 Fase 1 – Reservas (en curso)
+## ✅ Presentación al cliente (18 nov. 2026)
+
+- [x] Sitio presentado a David Sopetti: le encantó. Envió sugerencias y pidió a Jerome y a otro ingeniero que lo revisen
+- [ ] Recibir el feedback, ordenarlo por prioridad y esfuerzo, y aplicarlo
+
+---
+
+## ✅ Fase 1 – Reservas (lista)
 
 Reemplaza el plugin BookingPress de WordPress. Datos del negocio confirmados (Notion, nov. 2026):
 precios en `backend/src/catalog.ts`, horario L–J 5–9:30 PM, V 5–10:30 PM, S 12–10:30 PM, domingo cerrado.
@@ -27,9 +34,9 @@ precios en `backend/src/catalog.ts`, horario L–J 5–9:30 PM, V 5–10:30 PM, 
 - [x] Capacidad 16 personas a la vez; bloques de 30 min; el cupo se aparta 30 min mientras se paga (transacción Firestore)
 - [x] `GET /api/bookings/availability`, `POST /api/bookings/checkout` (Stripe Checkout), `POST /api/stripe/webhook`
 - [x] `/book-appointment`, `/thank-you` (confirma el pago con Stripe), `/cancellation-policy` (propuesta)
-- [x] Probado en local con tarjeta de test 4242
+- [x] Probado de punta a punta con tarjeta de test 4242 (nov. 2026): reserva, pago y confirmación funcionan
 
-**Pendiente:**
+**Extras y configuración para producción:**
 
 - [ ] Variables en Vercel (Stripe + Firebase) y webhook en Stripe → `/api/stripe/webhook`
 - [ ] Aprobar con el negocio: política de cancelación y precio de grupos intermedios (p. ej. 6 personas = $140)
@@ -46,10 +53,10 @@ precios en `backend/src/catalog.ts`, horario L–J 5–9:30 PM, V 5–10:30 PM, 
 
 ---
 
-## 🎨 Rediseño (rama `rediseno-arena`, pendiente de aprobar)
+## ✅ Rediseño (en `main`; presentado y aprobado por el cliente)
 
 - [x] Inicio con arena de robots animada en 3D (`ArenaCanvas`): reflectores, robots que chocan con chispas, cámara que se inclina con el scroll
-- [x] Paleta negro / naranja / blanco; títulos en Barlow Condensed
+- [x] Paleta negro / naranja / blanco; títulos en Chakra Petch (antes Barlow Condensed; paleta final en la Fase 4)
 - [x] Sin precios en el inicio; sección de promociones semanales lista (`promotions` en `site.ts`, se oculta si está vacía)
 - [x] Comida eliminada del sitio; un solo teléfono publicado + "We speak English & Spanish"
 - [ ] Confirmar el naranja exacto de la marca (hoy `#ff7a1a`, `--color-action` en `globals.css`)
