@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { EVENT_GROUP_SIZES } from "@botspot/backend/catalog";
 
 type ApiResponse = { ok: true; data: { id: string } } | { ok: false; error: { code: string; message: string } };
 
-/** Formulario de eventos corporativos (`corporate`), lista de espera STEAM (`steam`) o contacto (`contact`). */
+/** Formulario de eventos corporativos (`corporate`), lista de espera STEM (`steam`) o contacto (`contact`). */
 export function InquiryForm({ type }: { type: "corporate" | "steam" | "contact" }) {
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export function InquiryForm({ type }: { type: "corporate" | "steam" | "contact" 
         </h3>
         <p className="muted">
           {type === "steam"
-            ? "We'll let you know as soon as the STEAM Program opens."
+            ? "We'll let you know as soon as the STEM Program opens."
             : type === "contact"
               ? "Thanks for reaching out. We usually reply within one business day."
               : "We'll contact you soon with a custom quote for your event."}
@@ -86,8 +87,21 @@ export function InquiryForm({ type }: { type: "corporate" | "steam" | "contact" 
             </label>
           </div>
           <label className="field">
+            <span>How many people?</span>
+            <select name="groupSize" required defaultValue="">
+              <option value="" disabled>
+                Choose a range
+              </option>
+              {EVENT_GROUP_SIZES.map((size) => (
+                <option key={size} value={size}>
+                  {size} people
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
             <span>Tell us more (optional)</span>
-            <textarea name="message" rows={4} maxLength={2000} placeholder="Date, number of people, how long…" />
+            <textarea name="message" rows={4} maxLength={2000} placeholder="Date, how long, anything we should know…" />
           </label>
         </>
       ) : null}

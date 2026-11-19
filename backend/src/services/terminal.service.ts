@@ -12,7 +12,7 @@ import { formatMoney } from "../shop";
 
 export const LOCATIONS = {
   provo: "Provo arena",
-  orem: "Orem (STEAM classes)",
+  orem: "Orem (STEM classes)",
 } as const;
 
 export type LocationId = keyof typeof LOCATIONS;

@@ -1,5 +1,6 @@
 import "server-only";
 import { COLLECTIONS, getDb, isDatabaseConfigured } from "@botspot/database";
+import { isEventGroupSize, type EventGroupSize } from "../catalog";
 
 export type InquiryType = "corporate" | "steam" | "contact";
 
@@ -10,6 +11,7 @@ export interface InquiryInput {
   phone?: string;
   eventAddress?: string;
   eventType?: string;
+  groupSize?: string;
   message?: string;
   /** Campo trampa: los humanos no lo ven; si viene lleno es un bot. */
   website?: string;
@@ -22,6 +24,8 @@ export interface InquiryDoc {
   phone: string;
   eventAddress: string | null;
   eventType: string | null;
+  /** Rango de personas (solo eventos). Opcional: los formularios viejos no lo tienen. */
+  groupSize?: EventGroupSize | null;
   message: string | null;
   createdAt: number;
   clientId: string;
@@ -45,7 +49,7 @@ function clean(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
-/** Guarda un formulario de eventos corporativos o de la lista de espera STEAM. */
+/** Guarda un formulario de eventos corporativos o de la lista de espera STEM. */
 export async function createInquiry(input: InquiryInput, clientId: string): Promise<{ id: string }> {
   if (!isDatabaseConfigured()) {
     throw new InquiryError("unavailable", "The form is temporarily unavailable. Please call or email us.", 503);
@@ -63,6 +67,7 @@ export async function createInquiry(input: InquiryInput, clientId: string): Prom
     phone: clean(input.phone, 40),
     eventAddress: type === "corporate" ? clean(input.eventAddress, 200) : null,
     eventType: type === "corporate" ? clean(input.eventType, 120) : null,
+    groupSize: type === "corporate" && isEventGroupSize(input.groupSize) ? input.groupSize : null,
     message: clean(input.message, 2000) || null,
     createdAt: Date.now(),
     clientId,
@@ -77,6 +82,9 @@ export async function createInquiry(input: InquiryInput, clientId: string): Prom
   if (type === "contact" && !doc.message) throw new InquiryError("invalid_message", "Please write your message.");
   if (type === "corporate" && (!doc.eventAddress || !doc.eventType)) {
     throw new InquiryError("invalid_event", "Please tell us the event address and type.");
+  }
+  if (type === "corporate" && !doc.groupSize) {
+    throw new InquiryError("invalid_group_size", "Please tell us about how many people will attend.");
   }
 
   const col = getDb().collection(COLLECTIONS.inquiries);

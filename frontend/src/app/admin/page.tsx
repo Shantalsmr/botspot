@@ -291,7 +291,7 @@ function Dashboard({ data }: { data: AdminDashboard }) {
           </div>
         )}
 
-        <h2 className="admin-h2">Contact messages, event requests & STEAM waitlist</h2>
+        <h2 className="admin-h2">Contact messages, event requests & STEM waitlist</h2>
         {data.inquiries.length === 0 ? (
           <p className="muted">No requests yet.</p>
         ) : (
@@ -299,7 +299,7 @@ function Dashboard({ data }: { data: AdminDashboard }) {
             {data.inquiries.map((q) => (
               <article key={q.id} className="card inquiry-card">
                 <span className={`badge badge-${q.type}`}>
-                  {q.type === "steam" ? "STEAM waitlist" : q.type === "contact" ? "Contact message" : "Event request"}
+                  {q.type === "steam" ? "STEM waitlist" : q.type === "contact" ? "Contact message" : "Event request"}
                 </span>
                 <h3>{q.name}</h3>
                 <p>
@@ -310,6 +310,7 @@ function Dashboard({ data }: { data: AdminDashboard }) {
                 {q.eventType ? (
                   <p className="muted">
                     {q.eventType}
+                    {q.groupSize ? ` · ${q.groupSize} people` : ""}
                     {q.eventAddress ? ` · ${q.eventAddress}` : ""}
                   </p>
                 ) : null}

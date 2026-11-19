@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/check-out", destination: "/checkout", permanent: true },
+      { source: "/steam", destination: "/stem", permanent: true },
       { source: "/index.php/check-out", destination: "/checkout", permanent: true },
       { source: "/index.php/:path*", destination: "/:path*", permanent: true },
     ];

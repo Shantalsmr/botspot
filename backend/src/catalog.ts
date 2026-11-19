@@ -197,3 +197,14 @@ export function availableStarts(day: DayAvailability, pkg: BookingPackage, playe
   }
   return starts;
 }
+
+/**
+ * Eventos corporativos / arenas moviles: rangos de personas que el cliente elige en `/events`.
+ * El servidor solo acepta estos valores (feedback de David, 18 nov. 2026).
+ */
+export const EVENT_GROUP_SIZES = ["1–25", "26–50", "51–100", "101–250", "250+"] as const;
+export type EventGroupSize = (typeof EVENT_GROUP_SIZES)[number];
+
+export function isEventGroupSize(value: unknown): value is EventGroupSize {
+  return typeof value === "string" && (EVENT_GROUP_SIZES as readonly string[]).includes(value);
+}

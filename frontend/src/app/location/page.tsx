@@ -75,7 +75,7 @@ export default function LocationPage() {
       <section className="section">
         <div className="container grid grid-2">
           <div className="card">
-            <p className="eyebrow">STEAM Program</p>
+            <p className="eyebrow">STEM Program</p>
             <h3>Robotics classes are in Orem</h3>
             <p>
               <strong>{site.steamAddress}</strong>
@@ -92,7 +92,7 @@ export default function LocationPage() {
               >
                 Directions to classes
               </a>
-              <Link href="/steam" className="btn btn-outline">
+              <Link href="/stem" className="btn btn-outline">
                 About the program
               </Link>
             </div>

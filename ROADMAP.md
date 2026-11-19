@@ -19,7 +19,30 @@ Vamos a avanzar **poco a poco**, una función a la vez. Cada fase se termina, se
 ## ✅ Presentación al cliente (18 nov. 2026)
 
 - [x] Sitio presentado a David Sopetti: le encantó. Envió sugerencias y pidió a Jerome y a otro ingeniero que lo revisen
-- [ ] Recibir el feedback, ordenarlo por prioridad y esfuerzo, y aplicarlo
+- [x] Recibir el feedback de David (audio del 18 nov.)
+- Le gustó: la arena 3D del inicio con los robots peleando, Parties, Shop, Location y la cuenta del cliente (el ícono de la personita). Sin cambios ahí.
+
+**Cambios rápidos:**
+
+- [x] STEM en vez de STEAM (sobra la A) en títulos, menú, formularios y `/admin`; `/steam` → `/stem` con redirección
+      (el tipo interno `steam` en la colección `inquiries` se dejó igual para no romper los registros guardados)
+- [x] Teléfono único publicado: **(801) 471-5678** (reemplaza al (385) 283-2039)
+- [x] Redes en orden Instagram, TikTok, Facebook (contacto, torneos y pie de página)
+- [ ] Poner el enlace de TikTok en `site.social.tiktok`: el botón aparece solo cuando hay enlace
+- [x] `/events`: campo obligatorio "How many people?" con rangos (`EVENT_GROUP_SIZES` en `catalog.ts`: 1–25, 26–50, 51–100, 101–250, 250+); se ve en `/admin`
+
+**Cambios medianos:**
+
+- [ ] `/admin` más compacto: secciones desplegables para que la página no sea tan larga
+- [ ] `/admin`: lista de espera STEM en su propia sección, agrupada en cupos de ~10 personas; al llenarse un grupo, enviar el horario de inicio
+- [ ] `/tournaments`: línea de tiempo con los torneos que se vayan haciendo
+- [ ] `/gallery`: que las fotos cuenten algo (categorías como Parties / Tournaments / STEM y un pie de foto), no solo una cuadrícula
+
+**Cambios grandes:**
+
+- [ ] Solicitudes de eventos con plantilla de cotización en `/admin` según el tipo de cliente (company, school, university, festival)
+      y precio estimado según la distancia desde The Bot Spot (falta que el negocio defina tarifas y radios)
+- [ ] Cuenta del cliente como dashboard: secciones separadas para reservas, merch (pedidos) y cada experiencia
 
 ---
 

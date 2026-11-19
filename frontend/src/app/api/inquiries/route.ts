@@ -3,7 +3,7 @@ import { InquiryError, createInquiry, clientIdFromHeaders, fail, ok, type Inquir
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** POST /api/inquiries — formulario de eventos corporativos o lista de espera STEAM. */
+/** POST /api/inquiries — formulario de eventos corporativos o lista de espera STEM. */
 export async function POST(request: Request): Promise<Response> {
   let body: InquiryInput;
   try {

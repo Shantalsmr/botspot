@@ -55,7 +55,7 @@ export function SiteFooter() {
               {site.steamAddress}
             </a>
             <br />
-            <span className="muted small">STEAM classes</span>
+            <span className="muted small">STEM classes</span>
           </p>
           {site.phones.map((phone) => (
             <p key={phone}>
@@ -84,6 +84,11 @@ export function SiteFooter() {
             <a href={site.social.instagram} target="_blank" rel="noopener noreferrer">
               Instagram
             </a>
+            {site.social.tiktok ? (
+              <a href={site.social.tiktok} target="_blank" rel="noopener noreferrer">
+                TikTok
+              </a>
+            ) : null}
             <a href={site.social.facebook} target="_blank" rel="noopener noreferrer">
               Facebook
             </a>

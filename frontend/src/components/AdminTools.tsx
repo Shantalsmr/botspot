@@ -241,7 +241,7 @@ export function TerminalSaleForm({ today }: { today: string }) {
           <span>Location</span>
           <select id="term-location" value={location} onChange={(e) => setLocation(e.target.value)}>
             <option value="provo">Provo arena</option>
-            <option value="orem">Orem (STEAM classes)</option>
+            <option value="orem">Orem (STEM classes)</option>
           </select>
         </label>
       </div>

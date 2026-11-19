@@ -72,6 +72,11 @@ export default function TournamentsPage() {
                   <a className="btn btn-outline" href={site.social.instagram} target="_blank" rel="noopener noreferrer">
                     Instagram
                   </a>
+                  {site.social.tiktok ? (
+                    <a className="btn btn-outline" href={site.social.tiktok} target="_blank" rel="noopener noreferrer">
+                      TikTok
+                    </a>
+                  ) : null}
                   <a className="btn btn-outline" href={site.social.facebook} target="_blank" rel="noopener noreferrer">
                     Facebook
                   </a>

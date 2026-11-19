@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { photo, site } from "@/content/site";
 
 export const metadata: Metadata = {
-  title: "STEAM Program",
+  title: "STEM Program",
   description: "Hands-on robotics classes: design, build and battle your own robot. Join the waitlist.",
 };
 
@@ -17,10 +17,10 @@ const timeline = [
   { step: "Tournament", text: "Battle the robot you built in our arena!" },
 ];
 
-export default function SteamPage() {
+export default function StemPage() {
   return (
     <>
-      <PageHeader title="STEAM Program" eyebrow="Coming soon">
+      <PageHeader title="STEM Program" eyebrow="Coming soon">
         Hands-on robotics classes where students design, build and battle their own robot. Classes are held at
         our Orem location, {site.steamAddress}. Join the waitlist and we&apos;ll let you know when registration opens.
       </PageHeader>

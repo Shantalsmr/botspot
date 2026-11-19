@@ -52,7 +52,7 @@ Flujo obligatorio: **`frontend` (página o `app/api/*/route.ts`) → `backend` (
   `backend/src/lib/stripe.ts`. Precios, horario y capacidad de reservas en `backend/src/catalog.ts` (módulo puro,
   importable desde el cliente como `@botspot/backend/catalog`); el precio siempre se calcula en el servidor.
 - **Panel `/admin`**: una contraseña (`ADMIN_PASSWORD`) y cookie firmada (`backend/src/services/admin.service.ts`);
-  bloqueo tras 10 intentos fallidos. Formularios de eventos/STEAM en `inquiry.service.ts` (colección `inquiries`).
+  bloqueo tras 10 intentos fallidos. Formularios de eventos/STEM en `inquiry.service.ts` (colección `inquiries`).
 - **Cuentas de clientes** (`customer.service.ts`): correo + contraseña (scrypt), cookie firmada (`lib/session.ts`),
   id del documento = hash del correo. Solicitudes de cambio en `booking-request.service.ts`. Correos en `lib/email.ts`
   (Resend; si falta `RESEND_API_KEY` no se envía nada). Helpers de sesión para rutas: `frontend/src/lib/server.ts`.

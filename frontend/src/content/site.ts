@@ -9,18 +9,21 @@ export const site = {
     "Downtown Provo's family robot arcade. Battle weaponized robots, play classic arcade games and celebrate your birthday with robot-powered fun.",
   url: "https://thebotspot.org",
   email: "info@thebotspot.org",
-  phones: ["(385) 283-2039"],
+  /** Numero de contacto oficial (confirmado por David, 18 nov. 2026). No publicar otros. */
+  phones: ["(801) 471-5678"],
   /** Por telefono atienden en ingles y espanol (el sitio va solo en ingles). */
   phoneLanguages: "English & Spanish",
   pricePerPerson: 25,
   city: "Downtown Provo, Utah",
   /** Direccion de la arena (robots, arcade, fiestas). Se usa en /location, el mapa y el pie de pagina. */
   address: "255 N University Ave, Provo, UT 84604" as string | null,
-  /** Lugar de las clases del programa STEAM (es otro sitio, en Orem). */
+  /** Lugar de las clases del programa STEM (es otro sitio, en Orem). */
   steamAddress: "1201 N 800 E, Orem, UT 84097",
   social: {
     facebook: "https://www.facebook.com/p/The-Bot-Spot-61582077369646/",
     instagram: "https://www.instagram.com/botspot_ut/",
+    /** PENDIENTE: link del perfil de TikTok. Mientras sea null, el boton de TikTok no se muestra. */
+    tiktok: null as string | null,
   },
   /**
    * Canal de YouTube donde transmiten los torneos (pagina /tournaments).
@@ -65,7 +68,7 @@ export const navMenu: NavGroup[] = [
       { href: "/parties", label: "Parties", hint: "Birthdays & group fun" },
       { href: "/events", label: "Events", hint: "Corporate & mobile arenas" },
       { href: "/tournaments", label: "Tournaments", hint: "Watch & compete" },
-      { href: "/steam", label: "STEAM", hint: "Build your own robot" },
+      { href: "/stem", label: "STEM", hint: "Build your own robot" },
     ],
   },
   { label: "Shop", href: "/shop" },
@@ -84,7 +87,7 @@ export const navMenu: NavGroup[] = [
 export const navLinks = [
   { href: "/parties", label: "Parties" },
   { href: "/events", label: "Events" },
-  { href: "/steam", label: "STEAM" },
+  { href: "/stem", label: "STEM" },
   { href: "/tournaments", label: "Tournaments" },
   { href: "/shop", label: "Shop" },
   { href: "/gallery", label: "Gallery" },
