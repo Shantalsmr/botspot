@@ -53,6 +53,11 @@ Flujo obligatorio: **`frontend` (página o `app/api/*/route.ts`) → `backend` (
   importable desde el cliente como `@botspot/backend/catalog`); el precio siempre se calcula en el servidor.
 - **Panel `/admin`**: una contraseña (`ADMIN_PASSWORD`) y cookie firmada (`backend/src/services/admin.service.ts`);
   bloqueo tras 10 intentos fallidos. Formularios de eventos/STEM en `inquiry.service.ts` (colección `inquiries`).
+  Plantillas y precios de cotización de eventos por tipo de cliente en `backend/src/event-quotes.ts` (módulo puro,
+  `@botspot/backend/event-quotes`); el armador está en `components/QuoteBuilder.tsx`. Las cotizaciones enviadas y su
+  conversación con el cliente viven en `event-quote.service.ts` (colección `eventQuotes`, ligada por correo) y se
+  muestran con `components/QuoteThread.tsx` en `/admin` y `/account`. Millas por carretera desde la arena en
+  `distance.service.ts` (Google Maps si hay `GOOGLE_MAPS_API_KEY`; si no, OpenStreetMap Nominatim + OSRM).
 - **Cuentas de clientes** (`customer.service.ts`): correo + contraseña (scrypt), cookie firmada (`lib/session.ts`),
   id del documento = hash del correo. Solicitudes de cambio en `booking-request.service.ts`. Correos en `lib/email.ts`
   (Resend; si falta `RESEND_API_KEY` no se envía nada). Helpers de sesión para rutas: `frontend/src/lib/server.ts`.

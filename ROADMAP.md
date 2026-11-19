@@ -28,21 +28,47 @@ Vamos a avanzar **poco a poco**, una función a la vez. Cada fase se termina, se
       (el tipo interno `steam` en la colección `inquiries` se dejó igual para no romper los registros guardados)
 - [x] Teléfono único publicado: **(801) 471-5678** (reemplaza al (385) 283-2039)
 - [x] Redes en orden Instagram, TikTok, Facebook (contacto, torneos y pie de página)
-- [ ] Poner el enlace de TikTok en `site.social.tiktok`: el botón aparece solo cuando hay enlace
+- [x] Enlace de TikTok (`@bot.spot`) en `site.social.tiktok`
 - [x] `/events`: campo obligatorio "How many people?" con rangos (`EVENT_GROUP_SIZES` en `catalog.ts`: 1–25, 26–50, 51–100, 101–250, 250+); se ve en `/admin`
+- [x] `/events`: campo obligatorio "How long?" (`EVENT_DURATIONS`: 2, 3, 4, 5, 6 u 8 horas); se ve en `/admin` y precarga la cotización
 
 **Cambios medianos:**
 
-- [ ] `/admin` más compacto: secciones desplegables para que la página no sea tan larga
-- [ ] `/admin`: lista de espera STEM en su propia sección, agrupada en cupos de ~10 personas; al llenarse un grupo, enviar el horario de inicio
-- [ ] `/tournaments`: línea de tiempo con los torneos que se vayan haciendo
-- [ ] `/gallery`: que las fotos cuenten algo (categorías como Parties / Tournaments / STEM y un pie de foto), no solo una cuadrícula
+- [x] `/admin` más compacto: secciones desplegables con contador (abiertas solo solicitudes de cambio y próximas reservas);
+      formularios separados en Event requests, STEM waitlist y Contact messages
+- [x] `/admin`: lista de espera STEM por orden de llegada en grupos de `site.stemGroupSize` (10); grupo lleno se marca
+      y el botón "Email this group" abre un correo con todos en copia oculta para mandar el horario
+- [x] `/tournaments`: línea de tiempo "Hall of fame". Cada torneo de `tournaments` en `site.ts` pasa solo de "próximos" a la
+      línea de tiempo al día siguiente; se le puede agregar `winner`, `recap`, `photo` y `videoUrl`
+- [x] `/gallery`: 4 capítulos con historia corta y pie en cada foto (`galleryChapters` en `site.ts`) + llamado a reservar.
+      Pies de foto propuestos: que el negocio los corrija
 
 **Cambios grandes:**
 
-- [ ] Solicitudes de eventos con plantilla de cotización en `/admin` según el tipo de cliente (company, school, university, festival)
-      y precio estimado según la distancia desde The Bot Spot (falta que el negocio defina tarifas y radios)
-- [ ] Cuenta del cliente como dashboard: secciones separadas para reservas, merch (pedidos) y cada experiencia
+- [x] Plantillas de cotización por tipo de cliente (`backend/src/event-quotes.ts`): company (precio completo), university (~25% menos),
+      school (a precio de costo, enfoque en visibilidad: fotos, volantes, código de descuento familiar), festival (tarifa fija más baja
+      u opción de cobrar por batalla al público) y other. En `/admin`, cada solicitud de evento tiene "Prepare quote": precio por rango
+      de personas y horas, traslado por millas desde la arena (gratis hasta 15 mi; escuelas 25 mi y mitad de tarifa), checklist interno
+      y correo listo para mandar o copiar. Arriba de "Event requests" hay un armador suelto ("+ New quote") para clientes que
+      llaman, escriben por WhatsApp o llegan al local
+- [x] Cotización en la cuenta del cliente (mientras no salgan correos): "Send to customer's account" la guarda en `eventQuotes`
+      (`event-quote.service.ts`, precio recalculado en el servidor). El cliente la ve en `/account` y puede aceptar, rechazar
+      o preguntar; los dueños contestan en `/admin` → "Quotes & replies" (se abre y se marca en amarillo si hay respuesta pendiente).
+      Se liga por correo: si el cliente aún no tiene cuenta, la ve al crearla con ese correo. Al enviar `/events` se le invita a crearla
+- [x] Pendientes visibles: en `/account` la solicitud sale como "Quote in progress" hasta que llega la cotización; en `/admin`,
+      "Event requests" se abre en amarillo con las que esperan cotización (y cuántos días llevan); las ya cotizadas van plegadas
+- [x] "Quotes & replies" en grupos desplegables: esperando tu respuesta (abierto), pendientes del cliente, aceptadas y rechazadas
+- [x] Cotizaciones y solicitudes de evento en una sola línea (se despliegan con un clic) con etiqueta de color:
+      To quote / Reply (naranja), Pending (amarillo), Quoted / In progress (cian), Accepted (verde), Declined (rojo)
+- [x] Gráfica de ventas por día siempre visible debajo de los números de arriba en `/admin`
+- [ ] **Aprobar con el negocio los precios propuestos** en `event-quotes.ts` (base por rango, hora extra, tarifas de traslado)
+- [x] Millas calculadas solas (`distance.service.ts`, `/api/admin/distance`): al abrir la cotización con dirección, o con
+      "Calculate miles", se calcula la ruta en carro desde la arena de Provo y se llena el traslado. Usa OpenStreetMap gratis;
+      si se pone `GOOGLE_MAPS_API_KEY` (Distance Matrix API) en Vercel, usa Google Maps
+- [ ] Opcional: `GOOGLE_MAPS_API_KEY` en Vercel si OpenStreetMap no encuentra alguna dirección o se quiere más precisión
+- [x] Cuenta del cliente como dashboard: resumen arriba y secciones desplegables (Events & quotes, Upcoming bookings,
+      My orders con merch / gift cards / tickets y sus códigos, Past bookings); una fila por elemento con etiqueta de color
+      (Confirmed / Paid / Accepted verde, Pending y Change requested amarillo, In progress cian, Declined rojo, Done gris)
 
 ---
 

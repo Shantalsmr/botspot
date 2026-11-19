@@ -8,7 +8,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./catalog": "./src/catalog.ts",
-    "./shop": "./src/shop.ts"
+    "./shop": "./src/shop.ts",
+    "./event-quotes": "./src/event-quotes.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"

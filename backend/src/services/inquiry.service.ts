@@ -1,6 +1,6 @@
 import "server-only";
 import { COLLECTIONS, getDb, isDatabaseConfigured } from "@botspot/database";
-import { isEventGroupSize, type EventGroupSize } from "../catalog";
+import { isEventDuration, isEventGroupSize, type EventDuration, type EventGroupSize } from "../catalog";
 
 export type InquiryType = "corporate" | "steam" | "contact";
 
@@ -12,6 +12,7 @@ export interface InquiryInput {
   eventAddress?: string;
   eventType?: string;
   groupSize?: string;
+  hours?: string | number;
   message?: string;
   /** Campo trampa: los humanos no lo ven; si viene lleno es un bot. */
   website?: string;
@@ -26,6 +27,8 @@ export interface InquiryDoc {
   eventType: string | null;
   /** Rango de personas (solo eventos). Opcional: los formularios viejos no lo tienen. */
   groupSize?: EventGroupSize | null;
+  /** Horas que pide el cliente (solo eventos). Opcional: los formularios viejos no lo tienen. */
+  hours?: EventDuration | null;
   message: string | null;
   createdAt: number;
   clientId: string;
@@ -68,6 +71,7 @@ export async function createInquiry(input: InquiryInput, clientId: string): Prom
     eventAddress: type === "corporate" ? clean(input.eventAddress, 200) : null,
     eventType: type === "corporate" ? clean(input.eventType, 120) : null,
     groupSize: type === "corporate" && isEventGroupSize(input.groupSize) ? input.groupSize : null,
+    hours: type === "corporate" && isEventDuration(input.hours) ? (Number(input.hours) as EventDuration) : null,
     message: clean(input.message, 2000) || null,
     createdAt: Date.now(),
     clientId,
@@ -85,6 +89,9 @@ export async function createInquiry(input: InquiryInput, clientId: string): Prom
   }
   if (type === "corporate" && !doc.groupSize) {
     throw new InquiryError("invalid_group_size", "Please tell us about how many people will attend.");
+  }
+  if (type === "corporate" && !doc.hours) {
+    throw new InquiryError("invalid_hours", "Please tell us how long you'd like the event to be.");
   }
 
   const col = getDb().collection(COLLECTIONS.inquiries);

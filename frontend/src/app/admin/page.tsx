@@ -7,12 +7,19 @@ import {
   verifyAdminSession,
   type AdminBooking,
   type AdminDashboard,
+  type AdminEventQuote,
+  type InquirySummary,
   type RevenueSource,
   type SourceTotals,
 } from "@botspot/backend";
 import { AdminLogin, AdminLogout, ResolveRequestButton } from "@/components/AdminAuth";
 import { DeleteTerminalSale, GiftCardDesk, TerminalSaleForm, TerminalSyncPanel } from "@/components/AdminTools";
-import { telHref } from "@/content/site";
+import { QuoteBuilder } from "@/components/QuoteBuilder";
+import { QuoteThread } from "@/components/QuoteThread";
+import { site, telHref } from "@/content/site";
+
+/** Personas por grupo de clases STEM: al llenarse, se manda el horario de inicio. */
+const STEM_GROUP_SIZE = site.stemGroupSize;
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -78,6 +85,15 @@ export default async function AdminPage() {
 function Dashboard({ data }: { data: AdminDashboard }) {
   const byDate = new Map<string, AdminBooking[]>();
   for (const b of data.upcoming) byDate.set(b.date, [...(byDate.get(b.date) ?? []), b]);
+  const events = data.inquiries.filter((q) => q.type === "corporate");
+  const messages = data.inquiries.filter((q) => q.type === "contact");
+  // Lista de espera por orden de llegada (el primero en anotarse va en el grupo 1).
+  const waitlist = data.inquiries.filter((q) => q.type === "steam").sort((a, b) => a.createdAt - b.createdAt);
+  const awaitingOwner = data.quotes.filter((q) => q.awaiting === "owner").length;
+  // Solicitudes de /events que todavia no tienen cotizacion: las mas viejas arriba (llevan mas tiempo esperando).
+  const quotedIds = new Set(data.quotes.map((q) => q.inquiryId).filter((x): x is string => Boolean(x)));
+  const needsQuote = events.filter((q) => !quotedIds.has(q.id)).sort((a, b) => a.createdAt - b.createdAt);
+  const quotedEvents = events.filter((q) => quotedIds.has(q.id));
 
   return (
     <section className="section admin">
@@ -97,23 +113,17 @@ function Dashboard({ data }: { data: AdminDashboard }) {
           <Stat label="Bookings today" value={String(data.bookingsToday)} sub={`${data.playersToday} players`} />
         </div>
 
-        <SourceTable data={data} />
-
-        <RevenueChart data={data} />
-
-        <h2 className="admin-h2">Front desk</h2>
-        <div className="grid grid-2 admin-tools">
-          <GiftCardDesk />
-          <div className="admin-stack">
-            <TerminalSyncPanel providers={data.terminalSync} />
-            {/* Registro a mano: solo hace falta mientras Clover no este conectado. */}
-            <TerminalSaleForm today={data.today} />
-          </div>
+        {/* Grafica de ventas siempre visible (no desplegable): es lo primero que quieren ver los duenos. */}
+        <div className="admin-chart">
+          <RevenueChart data={data} />
         </div>
 
+        {/*
+          Secciones desplegables (feedback de David, 18 nov. 2026): la pagina no debe sentirse larga.
+          Abiertas por defecto solo las que piden accion: solicitudes de cambio y proximas reservas.
+        */}
         {data.requests.length > 0 ? (
-          <>
-            <h2 className="admin-h2">⚠️ Cancellation & change requests ({data.requests.length})</h2>
+          <AdminSection title="⚠️ Cancellation & change requests" count={data.requests.length} open alert>
             <p className="muted small">
               Refunds are done in Stripe (Payments → the payment → Refund). Then mark the request as handled.
             </p>
@@ -143,10 +153,10 @@ function Dashboard({ data }: { data: AdminDashboard }) {
                 </article>
               ))}
             </div>
-          </>
+          </AdminSection>
         ) : null}
 
-        <h2 className="admin-h2">Upcoming bookings (next 14 days)</h2>
+        <AdminSection title="Upcoming bookings" count={data.upcoming.length} hint="Next 14 days" open>
         {data.upcoming.length === 0 ? (
           <p className="muted">No paid bookings yet.</p>
         ) : (
@@ -194,8 +204,24 @@ function Dashboard({ data }: { data: AdminDashboard }) {
             </div>
           ))
         )}
+        </AdminSection>
 
-        <h2 className="admin-h2">Terminal sales</h2>
+        <AdminSection title="Money by source" hint="Bookings, shop & terminal · today, 7 days, month">
+          <SourceTable data={data} />
+        </AdminSection>
+
+        <AdminSection title="Front desk" hint="Gift cards, tickets & terminal">
+          <div className="grid grid-2 admin-tools">
+            <GiftCardDesk />
+            <div className="admin-stack">
+              <TerminalSyncPanel providers={data.terminalSync} />
+              {/* Registro a mano: solo hace falta mientras Clover no este conectado. */}
+              <TerminalSaleForm today={data.today} />
+            </div>
+          </div>
+        </AdminSection>
+
+        <AdminSection title="Terminal sales" count={data.terminalSales.length}>
         {data.terminalSales.length === 0 ? (
           <p className="muted">No terminal sales yet. Connect Clover or add them by hand above.</p>
         ) : (
@@ -228,8 +254,9 @@ function Dashboard({ data }: { data: AdminDashboard }) {
             </table>
           </div>
         )}
+        </AdminSection>
 
-        <h2 className="admin-h2">Shop orders</h2>
+        <AdminSection title="Shop orders" count={data.orders.length}>
         {data.orders.length === 0 ? (
           <p className="muted">No shop orders yet.</p>
         ) : (
@@ -291,43 +318,389 @@ function Dashboard({ data }: { data: AdminDashboard }) {
           </div>
         )}
 
-        <h2 className="admin-h2">Contact messages, event requests & STEM waitlist</h2>
-        {data.inquiries.length === 0 ? (
-          <p className="muted">No requests yet.</p>
-        ) : (
-          <div className="grid grid-3">
-            {data.inquiries.map((q) => (
-              <article key={q.id} className="card inquiry-card">
-                <span className={`badge badge-${q.type}`}>
-                  {q.type === "steam" ? "STEM waitlist" : q.type === "contact" ? "Contact message" : "Event request"}
-                </span>
-                <h3>{q.name}</h3>
-                <p>
-                  <a href={`mailto:${q.email}`}>{q.email}</a>
-                  <br />
-                  {q.phone ? <a href={telHref(q.phone)}>{q.phone}</a> : null}
-                </p>
-                {q.eventType ? (
-                  <p className="muted">
-                    {q.eventType}
-                    {q.groupSize ? ` · ${q.groupSize} people` : ""}
-                    {q.eventAddress ? ` · ${q.eventAddress}` : ""}
-                  </p>
-                ) : null}
-                {q.message ? <p className="inquiry-message">{q.message}</p> : null}
-                <p className="muted small">
-                  {new Intl.DateTimeFormat("en-US", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                    timeZone: "America/Denver",
-                  }).format(new Date(q.createdAt))}
-                </p>
-              </article>
-            ))}
-          </div>
-        )}
+        </AdminSection>
+
+        <AdminSection
+          title="Event requests"
+          count={events.length}
+          hint={needsQuote.length > 0 ? `${needsQuote.length} waiting for a quote` : "Corporate events & mobile arenas"}
+          open={needsQuote.length > 0}
+          alert={needsQuote.length > 0}
+        >
+          <QuoteBuilder phone={site.phones[0]} businessName={site.name} standalone />
+          {events.length === 0 ? <p className="muted">No event requests from the website yet.</p> : null}
+          {needsQuote.length > 0 ? (
+            <>
+              <h3 className="admin-subhead"><span className="status-pill status-reply">To quote</span> Waiting for a quote ({needsQuote.length})</h3>
+              <InquiryGrid list={needsQuote} empty="" withQuote pending />
+            </>
+          ) : null}
+          {quotedEvents.length > 0 ? (
+            <details className="admin-subsection">
+              <summary>Already quoted ({quotedEvents.length})</summary>
+              <InquiryGrid list={quotedEvents} empty="" withQuote quotedIds={quotedIds} />
+            </details>
+          ) : null}
+        </AdminSection>
+
+        <AdminSection
+          title="Quotes & replies"
+          count={data.quotes.length}
+          hint={awaitingOwner > 0 ? `${awaitingOwner} waiting for your reply` : "Sent to customers' accounts"}
+          open={awaitingOwner > 0}
+          alert={awaitingOwner > 0}
+        >
+          <QuoteList quotes={data.quotes} />
+        </AdminSection>
+
+        <AdminSection title="STEM waitlist" count={waitlist.length} hint={`Groups of ${STEM_GROUP_SIZE}`}>
+          <StemWaitlist list={waitlist} />
+        </AdminSection>
+
+        <AdminSection title="Contact messages" count={messages.length}>
+          <InquiryGrid list={messages} empty="No messages yet." />
+        </AdminSection>
       </div>
     </section>
+  );
+}
+
+/** Seccion desplegable del panel (`<details>` nativo: funciona sin JavaScript y con teclado). */
+function AdminSection({
+  title,
+  count,
+  hint,
+  open = false,
+  alert = false,
+  children,
+}: {
+  title: string;
+  count?: number;
+  hint?: string;
+  open?: boolean;
+  alert?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details className={`admin-section${alert ? " admin-section-alert" : ""}`} open={open}>
+      <summary>
+        <span className="admin-section-title">{title}</span>
+        {count !== undefined ? <span className="admin-count">{count}</span> : null}
+        {hint ? <span className="muted small admin-section-hint">{hint}</span> : null}
+      </summary>
+      <div className="admin-section-body">{children}</div>
+    </details>
+  );
+}
+
+const fullDate = (ms: number) =>
+  new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Denver" }).format(
+    new Date(ms),
+  );
+
+/** "today" / "1 day" / "3 days": cuanto lleva esperando una solicitud. */
+function waitingFor(createdAt: number): string {
+  const days = Math.floor((Date.now() - createdAt) / 86_400_000);
+  return days <= 0 ? "today" : days === 1 ? "1 day" : `${days} days`;
+}
+
+/**
+ * Etiqueta de estado (color + una palabra):
+ * Reply = te toca contestar (naranja) · Pending = esperando al cliente (amarillo)
+ * Accepted = aceptada (verde) · Declined = rechazada (rojo).
+ */
+function quoteStatus(q: AdminEventQuote): { label: string; tone: "reply" | "pending" | "accepted" | "declined" } {
+  if (q.status === "accepted") return { label: "Accepted", tone: "accepted" };
+  if (q.status === "declined") return { label: "Declined", tone: "declined" };
+  if (q.awaiting === "owner") return { label: "Reply", tone: "reply" };
+  return { label: "Pending", tone: "pending" };
+}
+
+/**
+ * Cotizaciones mandadas a la cuenta del cliente, en grupos desplegables para que no se vea todo largo.
+ * Solo se abre solo el grupo que pide accion (el cliente contesto y espera respuesta).
+ */
+function QuoteList({ quotes }: { quotes: AdminEventQuote[] }) {
+  if (quotes.length === 0) {
+    return <p className="muted">No quotes sent yet. Use “Prepare quote” or “+ New quote” and send it to the customer&apos;s account.</p>;
+  }
+  const groups: { key: string; tone: string; word: string; title: string; list: AdminEventQuote[]; open: boolean }[] = [
+    { key: "reply", tone: "reply", word: "Reply", title: "Waiting for your reply", list: quotes.filter((q) => q.awaiting === "owner"), open: true },
+    {
+      key: "pending",
+      tone: "pending",
+      word: "Pending",
+      title: "Waiting for the customer",
+      list: quotes.filter((q) => q.awaiting === "customer" && q.status === "sent"),
+      open: false,
+    },
+    {
+      key: "accepted",
+      tone: "accepted",
+      word: "Accepted",
+      title: "Ready to schedule",
+      list: quotes.filter((q) => q.awaiting === "customer" && q.status === "accepted"),
+      open: false,
+    },
+    {
+      key: "declined",
+      tone: "declined",
+      word: "Declined",
+      title: "Not this time",
+      list: quotes.filter((q) => q.awaiting === "customer" && q.status === "declined"),
+      open: false,
+    },
+  ];
+  return (
+    <>
+      {groups
+        .filter((g) => g.list.length > 0)
+        .map((g) => (
+          <details key={g.key} className={`admin-subsection quote-group quote-group-${g.key}`} open={g.open}>
+            <summary>
+              <span className={`status-pill status-${g.tone}`}>{g.word}</span> {g.title} <span className="admin-count">{g.list.length}</span>
+            </summary>
+            <QuoteCards quotes={g.list} />
+          </details>
+        ))}
+    </>
+  );
+}
+
+/** Ultimo mensaje recortado, para la vista compacta. */
+function lastMessage(q: AdminEventQuote): string {
+  const m = q.messages[q.messages.length - 1];
+  if (!m) return "";
+  const text = m.text.replace(/\s+/g, " ").trim();
+  return `${m.from === "owner" ? "You" : q.name.split(/\s+/)[0]}: ${text.length > 90 ? `${text.slice(0, 90)}…` : text}`;
+}
+
+/**
+ * Cada cotizacion es una fila compacta (nombre, tipo, total, estado y ultimo mensaje);
+ * la cotizacion completa y la conversacion se despliegan con un clic.
+ */
+function QuoteCards({ quotes }: { quotes: AdminEventQuote[] }) {
+  return (
+    <div className="quote-rows">
+      {quotes.map((q) => (
+        <details key={q.id} className={`card quote-card quote-row${q.awaiting === "owner" ? " is-waiting" : ""}`}>
+          <summary>
+            <span className="quote-row-main">
+              <strong>{q.name}</strong>
+              <span className="muted small">
+                {q.kindLabel} · {q.groupSize} people · {q.hours} h ·{" "}
+                {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "America/Denver" }).format(
+                  new Date(q.updatedAt),
+                )}
+              </span>
+              <span className="quote-row-last small">{lastMessage(q)}</span>
+            </span>
+            <span className="quote-row-side">
+              <strong>{q.totalCents !== null ? money(q.totalCents) : "By hand"}</strong>
+              <span className={`status-pill status-${quoteStatus(q).tone}`}>{quoteStatus(q).label}</span>
+            </span>
+          </summary>
+          <div className="quote-row-body">
+          <p className="muted small">
+            {q.kindLabel} · {q.groupSize} people · {q.hours} hours
+            {q.eventAddress ? ` · ${q.eventAddress}` : ""}
+          </p>
+          <p className="small">
+            <a href={`mailto:${q.email}`}>{q.email}</a> ·{" "}
+            {q.hasAccount ? (
+              <span>has an account</span>
+            ) : (
+              <span className="quote-warn">no account yet: they&apos;ll see it when they sign up with this email</span>
+            )}
+          </p>
+          <p>
+            <strong>{q.totalCents !== null ? money(q.totalCents) : "Price by hand"}</strong>
+            {q.awaiting === "owner" ? <span className="quote-warn small"> · waiting for your reply</span> : null}
+          </p>
+          <QuoteThread id={q.id} as="owner" messages={q.messages} status={q.status} customerName={q.name} />
+          </div>
+        </details>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Solicitudes de eventos en una sola linea (nombre, tipo, personas, horas, fecha y estado);
+ * los datos de contacto, el mensaje y el armador de cotizacion se despliegan con un clic.
+ */
+function EventRows({
+  list,
+  pending,
+  quotedIds,
+}: {
+  list: InquirySummary[];
+  pending: boolean;
+  quotedIds?: Set<string>;
+}) {
+  const short = (ms: number) =>
+    new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "America/Denver" }).format(new Date(ms));
+  return (
+    <div className="quote-rows">
+      {list.map((q) => (
+        <details key={q.id} className={`card quote-card quote-row${pending ? " is-waiting" : ""}`}>
+          <summary>
+            <span className="quote-row-main">
+              <strong>{q.name}</strong>
+              <span className="muted small">
+                {[q.eventType, q.groupSize ? `${q.groupSize} people` : null, q.hours ? `${q.hours} h` : null, short(q.createdAt)]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+            </span>
+            <span className="quote-row-side">
+              {pending ? (
+                <span className="status-pill status-reply">To quote · {waitingFor(q.createdAt)}</span>
+              ) : quotedIds?.has(q.id) ? (
+                <span className="status-pill status-progress">Quoted</span>
+              ) : null}
+            </span>
+          </summary>
+          <div className="quote-row-body">
+            <p className="small">
+              <a href={`mailto:${q.email}`}>{q.email}</a>
+              {q.phone ? (
+                <>
+                  {" · "}
+                  <a href={telHref(q.phone)}>{q.phone}</a>
+                </>
+              ) : null}
+            </p>
+            {q.eventAddress ? <p className="muted small">📍 {q.eventAddress}</p> : null}
+            {q.message ? <p className="inquiry-message">{q.message}</p> : null}
+            <p className="muted small">Received {fullDate(q.createdAt)}</p>
+            <QuoteBuilder
+              name={q.name}
+              email={q.email}
+              eventType={q.eventType}
+              eventAddress={q.eventAddress}
+              groupSize={q.groupSize}
+              hours={q.hours}
+              inquiryId={q.id}
+              phone={site.phones[0]}
+              businessName={site.name}
+            />
+          </div>
+        </details>
+      ))}
+    </div>
+  );
+}
+
+function InquiryGrid({
+  list,
+  empty,
+  withQuote = false,
+  quotedIds,
+  pending = false,
+}: {
+  list: InquirySummary[];
+  empty: string;
+  withQuote?: boolean;
+  /** Solicitudes que todavia esperan cotizacion (se marcan con cuantos dias llevan). */
+  pending?: boolean;
+  /** Solicitudes que ya tienen una cotizacion enviada. */
+  quotedIds?: Set<string>;
+}) {
+  if (list.length === 0) return <p className="muted">{empty}</p>;
+  if (withQuote) return <EventRows list={list} pending={pending} quotedIds={quotedIds} />;
+  return (
+    <div className="grid grid-3">
+      {list.map((q) => (
+        <article key={q.id} className={`card inquiry-card${pending ? " is-waiting" : ""}`}>
+          {quotedIds?.has(q.id) ? <span className="status-pill status-progress">Quoted</span> : null}
+          {pending ? <span className="status-pill status-reply">To quote · {waitingFor(q.createdAt)}</span> : null}
+          <h3>{q.name}</h3>
+          <p>
+            <a href={`mailto:${q.email}`}>{q.email}</a>
+            <br />
+            {q.phone ? <a href={telHref(q.phone)}>{q.phone}</a> : null}
+          </p>
+          {q.eventType ? (
+            <p className="muted">
+              {q.eventType}
+              {q.groupSize ? ` · ${q.groupSize} people` : ""}
+              {q.hours ? ` · ${q.hours} hours` : ""}
+              {q.eventAddress ? ` · ${q.eventAddress}` : ""}
+            </p>
+          ) : null}
+          {q.message ? <p className="inquiry-message">{q.message}</p> : null}
+          <p className="muted small">{fullDate(q.createdAt)}</p>
+          {withQuote ? (
+            <QuoteBuilder
+              name={q.name}
+              email={q.email}
+              eventType={q.eventType}
+              eventAddress={q.eventAddress}
+              groupSize={q.groupSize}
+              hours={q.hours}
+              inquiryId={q.id}
+              phone={site.phones[0]}
+              businessName={site.name}
+            />
+          ) : null}
+        </article>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Lista de espera STEM en grupos por orden de llegada (feedback de David): cuando un grupo se llena,
+ * los duenos les mandan el horario de inicio con un solo correo (todos en copia oculta).
+ */
+function StemWaitlist({ list }: { list: InquirySummary[] }) {
+  if (list.length === 0) return <p className="muted">Nobody on the waitlist yet.</p>;
+  const groups: InquirySummary[][] = [];
+  for (let i = 0; i < list.length; i += STEM_GROUP_SIZE) groups.push(list.slice(i, i + STEM_GROUP_SIZE));
+
+  return (
+    <div className="stem-groups">
+      {groups.map((group, i) => {
+        const full = group.length === STEM_GROUP_SIZE;
+        const bcc = group.map((q) => q.email).join(",");
+        const subject = encodeURIComponent(`Your STEM class at ${site.name} is ready to start!`);
+        return (
+          <article key={i} className={`card stem-group${full ? " stem-group-full" : ""}`}>
+            <div className="stem-group-head">
+              <h3>Group {i + 1}</h3>
+              <span className={`badge${full ? " badge-ready" : ""}`}>
+                {full ? "Full · send the schedule" : `${group.length} / ${STEM_GROUP_SIZE}`}
+              </span>
+            </div>
+            <div className="stem-meter" aria-hidden="true">
+              <span style={{ width: `${(group.length / STEM_GROUP_SIZE) * 100}%` }} />
+            </div>
+            <ol className="stem-list">
+              {group.map((q) => (
+                <li key={q.id}>
+                  <strong>{q.name}</strong>
+                  <span className="muted small">
+                    {" "}
+                    · <a href={`mailto:${q.email}`}>{q.email}</a>
+                    {q.phone ? (
+                      <>
+                        {" "}
+                        · <a href={telHref(q.phone)}>{q.phone}</a>
+                      </>
+                    ) : null}
+                  </span>
+                  {q.message ? <div className="muted small">“{q.message}”</div> : null}
+                </li>
+              ))}
+            </ol>
+            <a className={`btn ${full ? "btn-primary" : "btn-outline"}`} href={`mailto:?bcc=${bcc}&subject=${subject}`}>
+              Email this group
+            </a>
+          </article>
+        );
+      })}
+    </div>
   );
 }
 
@@ -356,7 +729,7 @@ function SourceTable({ data }: { data: AdminDashboard }) {
   ];
   return (
     <div className="card">
-      <h2 className="admin-h2">Where the money comes from</h2>
+      <h3 className="admin-h2">Where the money comes from</h3>
       <div className="table-wrap">
         <table className="admin-table source-table">
           <thead>
@@ -408,7 +781,7 @@ function RevenueChart({ data }: { data: AdminDashboard }) {
   return (
     <div className="card revenue">
       <div className="revenue-head">
-        <h2 className="admin-h2">Revenue per day</h2>
+        <h3 className="admin-h2">Revenue per day</h3>
         <span className="muted small">Last 30 days · by payment date · max {money(max)}</span>
       </div>
       <div className="chart-legend small">

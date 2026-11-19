@@ -305,3 +305,19 @@ export async function listPaidOrders(): Promise<OrderSummary[]> {
     .map((d) => toSummary(d.id, d.data() as OrderDoc))
     .sort((a, b) => (b.paidAt ?? b.createdAt) - (a.paidAt ?? a.createdAt));
 }
+
+/** Pedidos pagados de un cliente (hechos con su cuenta o con su correo), para su dashboard en /account. */
+export async function listCustomerOrders(customer: { id: string; email: string }): Promise<OrderSummary[]> {
+  if (!isDatabaseConfigured()) return [];
+  const col = getDb().collection(COLLECTIONS.orders);
+  const [byAccount, byEmail] = await Promise.all([
+    col.where("customerId", "==", customer.id).get(),
+    col.where("customer.email", "==", customer.email).get(),
+  ]);
+  const seen = new Map<string, OrderDoc>();
+  for (const d of [...byAccount.docs, ...byEmail.docs]) seen.set(d.id, d.data() as OrderDoc);
+  return [...seen.entries()]
+    .filter(([, o]) => o.status === "paid")
+    .map(([id, o]) => toSummary(id, o))
+    .sort((a, b) => (b.paidAt ?? b.createdAt) - (a.paidAt ?? a.createdAt));
+}

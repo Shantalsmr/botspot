@@ -208,3 +208,12 @@ export type EventGroupSize = (typeof EVENT_GROUP_SIZES)[number];
 export function isEventGroupSize(value: unknown): value is EventGroupSize {
   return typeof value === "string" && (EVENT_GROUP_SIZES as readonly string[]).includes(value);
 }
+
+/** Duraciones (horas) que el cliente puede pedir en `/events`. El precio base de la cotizacion cubre 2 horas. */
+export const EVENT_DURATIONS = [2, 3, 4, 5, 6, 8] as const;
+export type EventDuration = (typeof EVENT_DURATIONS)[number];
+
+export function isEventDuration(value: unknown): value is EventDuration {
+  const n = typeof value === "string" ? Number(value) : value;
+  return typeof n === "number" && (EVENT_DURATIONS as readonly number[]).includes(n);
+}

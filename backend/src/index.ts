@@ -55,6 +55,7 @@ export {
   OrderError,
   confirmOrderFromSession,
   createOrderCheckout,
+  listCustomerOrders,
   listPaidOrders,
   type CreateOrderInput,
   type OrderLine,
@@ -86,3 +87,18 @@ export {
   type ProviderStatus,
   type SyncProvider,
 } from "./services/terminal-sync.service";
+export {
+  QuoteError,
+  listCustomerQuotes,
+  listPendingEventRequests,
+  listEventQuotes,
+  replyToEventQuote,
+  respondToEventQuote,
+  sendEventQuote,
+  type AdminEventQuote,
+  type EventQuote,
+  type PendingEventRequest,
+  type QuoteMessage,
+  type QuoteStatus,
+} from "./services/event-quote.service";
+export { DistanceError, getDrivingDistance, type DrivingDistance } from "./services/distance.service";

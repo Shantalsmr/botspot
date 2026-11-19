@@ -50,6 +50,12 @@ const customers = () => getDb().collection(COLLECTIONS.customers);
 /** El id del documento es el hash del correo: asi un correo solo puede tener una cuenta. */
 const customerId = (email: string) => sha256(`customer:${email}`).slice(0, 40);
 const normEmail = (email: unknown) => (typeof email === "string" ? email.trim().toLowerCase().slice(0, 160) : "");
+
+/** Si ya existe una cuenta con ese correo (para avisar en /admin si el cliente vera la cotizacion). */
+export async function hasCustomerAccount(email: string): Promise<boolean> {
+  if (!isDatabaseConfigured()) return false;
+  return (await customers().doc(customerId(normEmail(email))).get()).exists;
+}
 const clean = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
 function validatePassword(password: unknown): string {

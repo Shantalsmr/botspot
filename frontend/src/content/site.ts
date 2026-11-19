@@ -19,11 +19,13 @@ export const site = {
   address: "255 N University Ave, Provo, UT 84604" as string | null,
   /** Lugar de las clases del programa STEM (es otro sitio, en Orem). */
   steamAddress: "1201 N 800 E, Orem, UT 84097",
+  /** Personas por grupo de clases STEM (lista de espera en /admin). Al llenarse un grupo se manda el horario. */
+  stemGroupSize: 10,
   social: {
     facebook: "https://www.facebook.com/p/The-Bot-Spot-61582077369646/",
     instagram: "https://www.instagram.com/botspot_ut/",
-    /** PENDIENTE: link del perfil de TikTok. Mientras sea null, el boton de TikTok no se muestra. */
-    tiktok: null as string | null,
+    /** Perfil de TikTok. Si se pone en null, el boton de TikTok deja de mostrarse. */
+    tiktok: "https://www.tiktok.com/@bot.spot" as string | null,
   },
   /**
    * Canal de YouTube donde transmiten los torneos (pagina /tournaments).
@@ -244,19 +246,108 @@ export const gallery: Photo[] = [
   { src: "/images/gallery/arena-floor.jpg", alt: "The arena floor with robots and balls", width: 1200, height: 1600 },
 ];
 
+export interface GalleryChapter {
+  id: string;
+  eyebrow: string;
+  title: string;
+  /** Una o dos frases que cuentan de que va el capitulo. */
+  story: string;
+  /** Fotos de `gallery` por nombre (sin ".jpg") con su pie de foto. */
+  photos: { name: string; caption: string }[];
+}
+
+/**
+ * La galeria cuenta una historia por capitulos en vez de ser solo fotos (feedback, 18 nov. 2026).
+ * Pies de foto propuestos: que el negocio los corrija si saben quien sale o de que evento es.
+ */
+export const galleryChapters: GalleryChapter[] = [
+  {
+    id: "battles",
+    eyebrow: "Chapter 1",
+    title: "Battle night",
+    story: "Lights down, controllers up. This is what a round in our arena looks like, from the driver's seat and from the glass.",
+    photos: [
+      { name: "arena-battle-crowd", caption: "Everyone presses against the glass for the final seconds." },
+      { name: "arena-red-lights", caption: "Red lights mean the round is on." },
+      { name: "arena-action", caption: "Chasing the ball across the arena floor." },
+      { name: "arena-glow", caption: "Colors, balls and robots everywhere." },
+      { name: "arena-night", caption: "A full arena on a busy night." },
+      { name: "arena-blue", caption: "A bot waiting for its next opponent." },
+      { name: "arena-overview", caption: "The arena from above: two teams, one floor." },
+      { name: "arena-floor", caption: "The calm before the battle." },
+    ],
+  },
+  {
+    id: "families",
+    eyebrow: "Chapter 2",
+    title: "Birthdays & family fun",
+    story: "Parents vs. kids, birthday crews and first-timers. Some of our favorite battles happen between people who share a last name.",
+    photos: [
+      { name: "family-robots", caption: "Family photo under The Bot Spot sign." },
+      { name: "battle-kids", caption: "Dad vs. son: the rematch nobody wanted to lose." },
+      { name: "party-group", caption: "A birthday crew with their glowing bots." },
+      { name: "kids-driving", caption: "Small hands, serious driving skills." },
+      { name: "kids-arena", caption: "Front-row seats to the action." },
+      { name: "kids-robots", caption: "Showing off their robots after the battle." },
+    ],
+  },
+  {
+    id: "friends",
+    eyebrow: "Chapter 3",
+    title: "Friends, teams & game night",
+    story: "Groups of friends, company teams and arcade breaks between rounds. The arena is better with a crowd.",
+    photos: [
+      { name: "group-robots-1", caption: "The squad, ready for battle." },
+      { name: "team-arena", caption: "A team event that turned into a tournament." },
+      { name: "friends-robots", caption: "Two friends, two robots, one winner." },
+      { name: "group-robots-2", caption: "Picking robots before the next round." },
+      { name: "new-robot", caption: "That first-battle excitement." },
+      { name: "arena-spectators", caption: "Cheering from around the arena." },
+      { name: "arcade-hall", caption: "The arcade hall, for breaks between battles." },
+      { name: "air-hockey", caption: "Classic arcade games for the warm-up." },
+    ],
+  },
+  {
+    id: "behind",
+    eyebrow: "Chapter 4",
+    title: "Behind the bots",
+    story: "Every robot is built, tuned and repaired by our team. This is where the battles really start.",
+    photos: [
+      { name: "robot-build", caption: "A new bot taking shape on the workbench." },
+      { name: "robot-closeup", caption: "Up close with one of our fighters." },
+      { name: "robot-shelf", caption: "The roster, charged and ready." },
+      { name: "staff-team", caption: "The crew that keeps the bots battling." },
+    ],
+  },
+];
+
 export function photo(name: string): Photo {
   return gallery.find((p) => p.src.endsWith(`/${name}.jpg`)) ?? gallery[0]!;
 }
 
 export interface Tournament {
   title: string;
-  /** Fecha (YYYY-MM-DD). Despues de ese dia deja de mostrarse en "proximos". */
+  /** Fecha (YYYY-MM-DD). Despues de ese dia pasa solo de "proximos" a la linea de tiempo. */
   date: string;
   time: string;
   description: string;
+  /** Lo que se llena despues del torneo (todo opcional) y se ve en la linea de tiempo: */
+  /** Ganador o equipo ganador. */
+  winner?: string;
+  /** Resumen corto de como fue. */
+  recap?: string;
+  /** Foto de /public/images/gallery, sin ".jpg" (p. ej. "arena-night"). */
+  photo?: string;
+  /** Enlace al video del torneo (YouTube, Instagram o TikTok). */
+  videoUrl?: string;
 }
 
-/** Proximos torneos (los agrega el negocio). Vacio = la seccion dice que pronto se anuncian. */
+/**
+ * Todos los torneos, proximos y pasados (los agrega el negocio). Los proximos salen arriba;
+ * los pasados, en la linea de tiempo (feedback de David, 18 nov. 2026). Ejemplo:
+ * { title: "Winter Clash", date: "2026-12-12", time: "6:00 PM", description: "1v1, all ages.",
+ *   winner: "Team Sparky", recap: "16 drivers, 3 knockouts in the final.", photo: "arena-night" }
+ */
 export const tournaments: Tournament[] = [];
 
 export interface LoopVideo {

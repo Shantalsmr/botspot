@@ -26,6 +26,8 @@ export default function TournamentsPage() {
   const uploads = channelId ? `UU${channelId.slice(2)}` : null;
   const today = nowInProvo().date;
   const upcoming = tournaments.filter((t) => t.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+  // Linea de tiempo: el mas reciente arriba.
+  const past = tournaments.filter((t) => t.date < today).sort((a, b) => b.date.localeCompare(a.date));
   const hero = photo("arena-night");
 
   return (
@@ -121,10 +123,65 @@ export default function TournamentsPage() {
         </div>
       </section>
 
+      <section className="section">
+        <div className="container">
+          <p className="eyebrow">Hall of fame</p>
+          <h2>Tournament timeline</h2>
+          <ol className="t-timeline">
+            {past.length === 0 ? (
+              <li className="t-node t-node-next">
+                <span className="t-dot" aria-hidden="true" />
+                <div className="card">
+                  <p className="eyebrow">Chapter 1</p>
+                  <h3>Our first tournament is coming</h3>
+                  <p className="muted">
+                    Every battle we host will land here: the date, the champions and the best moments. Want your name
+                    on this timeline? Start practicing now.
+                  </p>
+                </div>
+              </li>
+            ) : (
+              past.map((t) => {
+                const img = t.photo ? photo(t.photo) : null;
+                return (
+                  <li key={`${t.date}-${t.title}`} className="t-node">
+                    <span className="t-dot" aria-hidden="true" />
+                    <article className={`card${img ? " t-card-photo" : ""}`}>
+                      {img ? (
+                        <div className="photo">
+                          <Image src={img.src} alt={img.alt} width={img.width} height={img.height} sizes="(max-width: 700px) 100vw, 260px" />
+                        </div>
+                      ) : null}
+                      <div>
+                        <p className="eyebrow">
+                          <time dateTime={t.date}>{niceDate(t.date)}</time>
+                        </p>
+                        <h3>{t.title}</h3>
+                        {t.winner ? (
+                          <p className="t-winner">
+                            🏆 <strong>{t.winner}</strong>
+                          </p>
+                        ) : null}
+                        <p className="muted">{t.recap ?? t.description}</p>
+                        {t.videoUrl ? (
+                          <a className="btn btn-outline" href={t.videoUrl} target="_blank" rel="noopener noreferrer">
+                            Watch the battle
+                          </a>
+                        ) : null}
+                      </div>
+                    </article>
+                  </li>
+                );
+              })
+            )}
+          </ol>
+        </div>
+      </section>
+
       {uploads ? (
-        <section className="section">
+        <section className="section section-alt">
           <div className="container">
-            <h2>Past tournaments</h2>
+            <h2>Tournament videos</h2>
             <div className="video-frame">
               <iframe
                 src={`https://www.youtube-nocookie.com/embed/videoseries?list=${uploads}`}

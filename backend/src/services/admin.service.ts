@@ -5,6 +5,7 @@ import { addDays, formatPrice, formatTime, getPackage, nowInProvo } from "../cat
 import type { BookingDoc } from "./booking.service";
 import { listOpenRequests, type AdminRequest } from "./booking-request.service";
 import { listInquiries, type InquirySummary } from "./inquiry.service";
+import { listEventQuotes, type AdminEventQuote } from "./event-quote.service";
 import { listPaidOrders, type OrderSummary } from "./order.service";
 import { listTerminalSales, type TerminalSale } from "./terminal.service";
 import { getTerminalSyncStatus, type ProviderStatus } from "./terminal-sync.service";
@@ -132,6 +133,8 @@ export interface AdminDashboard {
   /** Solicitudes de cancelacion/cambio abiertas. */
   requests: AdminRequest[];
   inquiries: InquirySummary[];
+  /** Cotizaciones de eventos enviadas a la cuenta del cliente, con su conversacion. */
+  quotes: AdminEventQuote[];
   /** Ultimos pedidos pagados de la tienda. */
   orders: OrderSummary[];
   /** Ventas de la terminal (Clover) de este mes y los ultimos 30 dias. */
@@ -231,7 +234,9 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
     daily: [...byDay.values()],
     upcoming: upcomingDocs.map(({ id, b }) => toAdminBooking(id, b)),
     requests: await listOpenRequests(),
-    inquiries: await listInquiries(50),
+    // Alto para que la lista de espera STEM salga completa (ademas de mensajes y eventos).
+    inquiries: await listInquiries(500),
+    quotes: await listEventQuotes(),
     orders: orders.slice(0, 30),
     terminalSales,
     terminalSync: await getTerminalSyncStatus(),

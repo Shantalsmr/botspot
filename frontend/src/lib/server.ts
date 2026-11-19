@@ -9,6 +9,8 @@ import {
   GiftCardError,
   TerminalError,
   InquiryError,
+  DistanceError,
+  QuoteError,
   RequestError,
   fail,
   getCustomerFromSession,
@@ -55,6 +57,8 @@ export function errorResponse(error: unknown, tag: string): Response {
   if (
     error instanceof AccountError ||
     error instanceof RequestError ||
+    error instanceof QuoteError ||
+    error instanceof DistanceError ||
     error instanceof BookingError ||
     error instanceof InquiryError ||
     error instanceof AdminError ||

@@ -24,6 +24,8 @@ export const COLLECTIONS = {
   terminalSales: "terminalSales",
   /** Solicitudes de cancelacion o cambio de una reserva. */
   bookingRequests: "bookingRequests",
+  /** Cotizaciones de eventos que los duenos mandan a la cuenta del cliente, con sus mensajes. */
+  eventQuotes: "eventQuotes",
   /** Documentos internos, p. ej. la prueba de conexion. */
   system: "_system",
 } as const;

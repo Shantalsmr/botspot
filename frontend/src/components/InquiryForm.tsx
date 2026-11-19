@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { EVENT_GROUP_SIZES } from "@botspot/backend/catalog";
+import { EVENT_DURATIONS, EVENT_GROUP_SIZES } from "@botspot/backend/catalog";
 
 type ApiResponse = { ok: true; data: { id: string } } | { ok: false; error: { code: string; message: string } };
 
@@ -43,8 +44,21 @@ export function InquiryForm({ type }: { type: "corporate" | "steam" | "contact" 
             ? "We'll let you know as soon as the STEM Program opens."
             : type === "contact"
               ? "Thanks for reaching out. We usually reply within one business day."
-              : "We'll contact you soon with a custom quote for your event."}
+              : "We'll send a custom quote for your event to your Bot Spot account, where you can accept it or ask us questions."}
         </p>
+        {type === "corporate" ? (
+          <div className="actions">
+            <Link href="/account/register?next=/account" className="btn btn-primary btn-small">
+              Create your account
+            </Link>
+            <Link href="/account/login?next=/account" className="btn btn-outline btn-small">
+              I already have one
+            </Link>
+          </div>
+        ) : null}
+        {type === "corporate" ? (
+          <p className="muted small">Use the same email you just entered so your quote shows up there.</p>
+        ) : null}
       </div>
     );
   }
@@ -86,22 +100,37 @@ export function InquiryForm({ type }: { type: "corporate" | "steam" | "contact" 
               </select>
             </label>
           </div>
-          <label className="field">
-            <span>How many people?</span>
-            <select name="groupSize" required defaultValue="">
-              <option value="" disabled>
-                Choose a range
-              </option>
-              {EVENT_GROUP_SIZES.map((size) => (
-                <option key={size} value={size}>
-                  {size} people
+          <div className="form-row">
+            <label className="field">
+              <span>How many people?</span>
+              <select name="groupSize" required defaultValue="">
+                <option value="" disabled>
+                  Choose a range
                 </option>
-              ))}
-            </select>
-          </label>
+                {EVENT_GROUP_SIZES.map((size) => (
+                  <option key={size} value={size}>
+                    {size} people
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>How long?</span>
+              <select name="hours" required defaultValue="">
+                <option value="" disabled>
+                  Choose a duration
+                </option>
+                {EVENT_DURATIONS.map((h) => (
+                  <option key={h} value={h}>
+                    {h} hours
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <label className="field">
             <span>Tell us more (optional)</span>
-            <textarea name="message" rows={4} maxLength={2000} placeholder="Date, how long, anything we should know…" />
+            <textarea name="message" rows={4} maxLength={2000} placeholder="Date, start time, anything we should know…" />
           </label>
         </>
       ) : null}
