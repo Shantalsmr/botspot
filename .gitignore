@@ -27,3 +27,6 @@ subir_a_github.bat
 
 # Fotos originales de Google (pesadas). Las copias optimizadas estan en frontend/public/images/gallery
 /The Bot Spot Imagenes Google/
+
+# Material de ventas y contratos (privado, no se sube a GitHub)
+presentacion/
